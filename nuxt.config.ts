@@ -11,6 +11,9 @@ export default defineNuxtConfig({
       exclude: ['/pricing', '/'],
     }
   },
+  nitro: {
+    preset: 'netlify'
+  },
   app: {
     head: {
       htmlAttrs: {
