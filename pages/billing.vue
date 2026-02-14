@@ -214,11 +214,11 @@ const manageSubscription = async () => {
       window.location.href = response.url
     }
   } catch (error: any) {
-  statusMessage.value = {
-    type: 'error',
-    text: 'Failed to open billing portal. Please try again.'
-  }
-} finally {
+    statusMessage.value = {
+      type: 'error',
+      text: 'Failed to open billing portal. Please try again.'
+    }
+  } finally {
     loading.value = false
   }
 }
