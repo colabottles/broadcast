@@ -3,8 +3,13 @@
   SECRETS_SCAN_OMIT_KEYS = "SUPABASE_KEY,SUPABASE_SERVICE_KEY,SUPABASE_URL"
 
 [build]
-  command = "npm run generate"
+  command = "npm run build"
   publish = "dist"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
 
 [[redirects]]
   from = "/*"
