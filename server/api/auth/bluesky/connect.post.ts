@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import AtpAgent from '@atproto/api'
+import { AtpAgent } from '@atproto/api'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
