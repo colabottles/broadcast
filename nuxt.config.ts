@@ -1,16 +1,8 @@
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
-
   modules: ['@nuxtjs/supabase'],
-
-  nitro: {
-    preset: 'netlify',
-      output: {
-        dir: 'dist'
-      }
-  },
-
+  ssr: false, // Disable SSR - use client-side rendering
   supabase: {
     redirect: true,
     redirectOptions: {
@@ -19,7 +11,6 @@ export default defineNuxtConfig({
       exclude: ['/pricing', '/'],
     }
   },
-
   app: {
     head: {
       htmlAttrs: {
@@ -36,17 +27,12 @@ export default defineNuxtConfig({
       ]
     }
   },
-
   css: ['~/assets/css/main.css'],
-
-  // Enable type checking
   typescript: {
     strict: true,
     typeCheck: true
   },
-
   runtimeConfig: {
-    // Private keys (server-only)
     supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
@@ -58,14 +44,12 @@ export default defineNuxtConfig({
     linkedinClientSecret: process.env.LINKEDIN_CLIENT_SECRET,
     linkedinCallbackUrl: process.env.LINKEDIN_CALLBACK_URL,
     cronSecret: process.env.CRON_SECRET,
-
-    // Public keys (exposed to client)
     public: {
       supabase: {
         url: process.env.SUPABASE_URL,
         key: process.env.SUPABASE_KEY
       },
-      siteUrl: process.env.SITE_URL || 'http://localhost:3000'
+      siteUrl: process.env.SITE_URL || 'https://brdcst.netlify.app'
     }
   }
 })
