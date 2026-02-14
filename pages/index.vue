@@ -597,7 +597,13 @@ const handleSubmit = async () => {
         formData.append('file', image.file)
         formData.append('alt_text', image.alt_text)
 
-        const uploadResponse = await $fetch('/api/upload-image', {
+        type UploadResponse = {
+          success: boolean
+          url: string
+          message?: string
+        }
+
+        const uploadResponse = await $fetch<UploadResponse>('/api/upload-image', {
           method: 'POST',
           body: formData
         })
