@@ -2,7 +2,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
   modules: ['@nuxtjs/supabase'],
-  ssr: false, // Disable SSR - use client-side rendering
+  ssr: true, // Disable SSR - use client-side rendering
   supabase: {
     redirect: true,
     redirectOptions: {
