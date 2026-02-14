@@ -268,13 +268,6 @@ const user = useSupabaseUser()
 const router = useRouter()
 const supabase = useSupabaseClient()
 
-// Redirect logged-in users to dashboard
-watch(user, (newUser) => {
-  if (newUser) {
-    router.push('/dashboard')
-  }
-}, { immediate: true })
-
 // Load user profile for subscription check
 const userProfile = ref<any>(null)
 onMounted(async () => {

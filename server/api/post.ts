@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { TwitterApi } from 'twitter-api-v2'
-import AtpAgent from '@atproto/api'
+import { AtpAgent } from '@atproto/api'
 
 interface PostResult {
   success: boolean
@@ -120,7 +120,7 @@ export default defineEventHandler(async (event) => {
           result = await postToTwitter(connection, body.content)
           break
         case 'bluesky':
-          result = await postToBluesky(connection, body.content)
+          result = await postToBluesky(connection, body.content, body.images, body.tags)
           break
         case 'mastodon':
           result = await postToMastodon(connection, body.content)
@@ -205,12 +205,11 @@ async function postToTwitter(connection: any, content: string): Promise<PostResu
   }
 }
 
-async function postToBluesky(connection: any, content: string): Promise<PostResult> {
+async function postToBluesky(connection: any, content: string, images?: any[], tags?: string[]): Promise<PostResult> {
   const agent = new AtpAgent({
     service: 'https://bsky.social'
   })
 
-  // Resume session from stored tokens
   await agent.resumeSession({
     did: connection.platform_user_id,
     handle: connection.platform_username,
@@ -220,13 +219,82 @@ async function postToBluesky(connection: any, content: string): Promise<PostResu
   })
 
   try {
-    // Use the API to create a post
+    // Add hashtags to content
+    let fullText = content
+    const facets: Array<{
+      index: { byteStart: number; byteEnd: number }
+      features: Array<{ $type: string; tag: string }>
+    }> = []
+
+    if (tags && tags.length > 0) {
+      const hashtags = tags.map(tag => `#${tag.replace(/^#/, '')}`).join(' ')
+      fullText = `${content}\n\n${hashtags}`
+
+      // Create facets for each hashtag to make them clickable
+      const encoder = new TextEncoder()
+
+      tags.forEach(tag => {
+        const cleanTag = tag.replace(/^#/, '')
+        const hashtagText = `#${cleanTag}`
+        const start = fullText.indexOf(hashtagText)
+
+        if (start !== -1) {
+          // Calculate byte positions (Bluesky uses UTF-8 byte positions)
+          const beforeText = fullText.substring(0, start)
+          const byteStart = encoder.encode(beforeText).length
+          const byteEnd = byteStart + encoder.encode(hashtagText).length
+
+          facets.push({
+            index: {
+              byteStart,
+              byteEnd
+            },
+            features: [{
+              $type: 'app.bsky.richtext.facet#tag',
+              tag: cleanTag
+            }]
+          })
+        }
+      })
+    }
+
+    const postData: any = {
+      text: fullText,
+      createdAt: new Date().toISOString()
+    }
+
+    // Add facets if we have any
+    if (facets.length > 0) {
+      postData.facets = facets
+    }
+
+    // Handle images if provided
+    if (images && images.length > 0) {
+      const uploadedImages = []
+
+      for (const image of images) {
+        const imageResponse = await fetch(image.url)
+        const imageBuffer = await imageResponse.arrayBuffer()
+
+        const uploadResponse = await agent.uploadBlob(new Uint8Array(imageBuffer), {
+          encoding: 'image/jpeg'
+        })
+
+        uploadedImages.push({
+          alt: image.alt_text || '',
+          image: uploadResponse.data.blob
+        })
+      }
+
+      postData.embed = {
+        $type: 'app.bsky.embed.images',
+        images: uploadedImages
+      }
+    }
+
     const response = await agent.api.app.bsky.feed.post.create(
       { repo: connection.platform_user_id },
-      {
-        text: content,
-        createdAt: new Date().toISOString()
-      }
+      postData
     )
 
     return {
