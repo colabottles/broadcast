@@ -6,6 +6,9 @@ export default defineNuxtConfig({
 
   nitro: {
     preset: 'netlify',
+      output: {
+        dir: 'dist'
+      }
   },
 
   supabase: {
