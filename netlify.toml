@@ -7,8 +7,7 @@
   publish = ".output/public"
 
 [functions]
-  node_bundler = "esbuild"
-  directory = ".output/server"
+  directory = ".netlify/functions-internal"
 
 [[redirects]]
   from = "/*"
