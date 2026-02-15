@@ -7,6 +7,7 @@ Complete guide to deploying Broadcast to Netlify.
 ## Prerequisites
 
 Before deploying:
+
 - ✅ GitHub account
 - ✅ Netlify account (free tier is fine)
 - ✅ Supabase project set up
@@ -18,6 +19,7 @@ Before deploying:
 ## Step 1: Push to GitHub
 
 1. Create a new GitHub repository:
+
 ```bash
 # Initialize git if not already done
 git init
@@ -110,11 +112,6 @@ STRIPE_PRICE_CREATOR_YEARLY=price_xxx
 STRIPE_PRICE_PROFESSIONAL_MONTHLY=price_xxx
 STRIPE_PRICE_PROFESSIONAL_YEARLY=price_xxx
 
-# Twitter/X API
-TWITTER_CLIENT_ID=your-client-id
-TWITTER_CLIENT_SECRET=your-client-secret
-TWITTER_CALLBACK_URL=https://yoursite.netlify.app/api/auth/twitter/callback
-
 # Mastodon
 MASTODON_CLIENT_ID=your-client-id
 MASTODON_CLIENT_SECRET=your-client-secret
@@ -131,6 +128,7 @@ NODE_ENV=production
 ### How to Set Environment Variables
 
 **Via Dashboard:**
+
 1. Go to Site Settings → Environment Variables
 2. Click "Add a variable"
 3. Enter key and value
@@ -138,6 +136,7 @@ NODE_ENV=production
 5. Repeat for all variables
 
 **Via CLI:**
+
 ```bash
 # Set individual variables
 netlify env:set SUPABASE_URL "https://your-project.supabase.co"
@@ -156,10 +155,9 @@ netlify env:import .env.production
 1. Go to Supabase Dashboard → Authentication → URL Configuration
 2. Update:
    - **Site URL**: `https://yoursite.netlify.app`
-   - **Redirect URLs**: 
+   - **Redirect URLs**:
      - `https://yoursite.netlify.app/confirm`
      - `https://yoursite.netlify.app/dashboard`
-     - `https://yoursite.netlify.app/api/auth/twitter/callback`
      - `https://yoursite.netlify.app/api/auth/mastodon/callback`
 
 ### Stripe
@@ -175,12 +173,6 @@ netlify env:import .env.production
 2. **Checkout Success URLs**:
    - These are already dynamic in the code using `SITE_URL`
    - Just ensure `SITE_URL` env var is set correctly
-
-### Twitter/X
-
-1. Go to Twitter Developer Portal
-2. Update OAuth 2.0 Redirect URIs:
-   - Add: `https://yoursite.netlify.app/api/auth/twitter/callback`
 
 ### Mastodon
 
@@ -199,10 +191,12 @@ netlify env:import .env.production
 4. Follow DNS instructions:
 
 **If using Netlify DNS:**
+
 - Transfer nameservers to Netlify
 - Automatic SSL certificate
 
 **If using external DNS:**
+
 - Add CNAME record: `www` → `yoursite.netlify.app`
 - Add A record: `@` → Netlify Load Balancer IP
 - SSL certificate auto-provisioned
@@ -210,13 +204,13 @@ netlify env:import .env.production
 ### Update Environment Variables
 
 After adding custom domain:
+
 ```bash
 SITE_URL=https://yourdomain.com
-TWITTER_CALLBACK_URL=https://yourdomain.com/api/auth/twitter/callback
 MASTODON_CALLBACK_URL=https://yourdomain.com/api/auth/mastodon/callback
 ```
 
-Then update all external services (Supabase, Stripe, Twitter) with new URLs.
+Then update all external services (Supabase, Stripe) with new URLs.
 
 ---
 
@@ -228,13 +222,13 @@ Test these URLs:
 
 1. **Homepage**: `https://yoursite.netlify.app/`
    - Should load posting interface
-   
+
 2. **Pricing**: `https://yoursite.netlify.app/pricing`
    - Should show plans
-   
+
 3. **Login**: `https://yoursite.netlify.app/login`
    - Should show login form
-   
+
 4. **API Health**: Check Netlify Function logs
    - Site Settings → Functions → Check for errors
 
@@ -484,7 +478,6 @@ Before going live:
 
 3. **Marketing**:
    - Add to Product Hunt
-   - Share on Twitter/X
    - Share on Bluesky
    - Post to Reddit (r/SideProject)
    - Share on Hacker News
@@ -534,16 +527,19 @@ netlify dev
 ## Cost Breakdown (Monthly)
 
 **Free Tier:**
+
 - Netlify: $0
 - Supabase: $0 (up to 500MB storage)
 - Stripe: 2.9% + $0.30 per transaction only
 
 **Recommended Startup Stack:**
+
 - Netlify Pro: $19/mo (optional)
 - Supabase Pro: $25/mo (when you hit limits)
 - Total: $0-44/mo to start
 
 **Revenue Threshold to Break Even:**
+
 - At $15/user (Creator plan)
 - Need ~3-4 paying customers to cover hosting
 - Very achievable! 🚀

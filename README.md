@@ -2,7 +2,7 @@
 
 **The accessible, multi-platform social media publishing tool.**
 
-Post to Twitter/X, Bluesky, Mastodon, and LinkedIn — all in one place. Built with accessibility-first principles and designed for creators, teams, and businesses.
+Post to Bluesky, Mastodon, and LinkedIn — all in one place. Built with accessibility-first principles and designed for creators, teams, and businesses.
 
 ---
 
@@ -26,12 +26,9 @@ Post to Twitter/X, Bluesky, Mastodon, and LinkedIn — all in one place. Built w
 
 ### Platform Support
 
-- ✅ **Twitter/X** - OAuth 2.0 integration
 - ✅ **Bluesky** - App password authentication
 - ✅ **Mastodon** - Dynamic per-instance OAuth
 - ⏳ **LinkedIn** - Coming soon
-- ⏳ **Threads** - Waiting for official API
-- ⏳ **Facebook** - Coming soon
 
 ### Subscription Plans
 

@@ -303,12 +303,9 @@ const truncate = (str: string, length: number) => {
 
 const getPlatformName = (platform: string) => {
   const names: Record<string, string> = {
-    twitter: 'Twitter/X',
     bluesky: 'Bluesky',
     mastodon: 'Mastodon',
     linkedin: 'LinkedIn',
-    threads: 'Threads',
-    facebook: 'Facebook'
   }
   return names[platform] || platform
 }

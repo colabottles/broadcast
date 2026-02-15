@@ -105,7 +105,7 @@ const recentPosts = ref([
   {
     id: 1,
     content: 'Just launched our new feature! Check it out...',
-    platforms: ['twitter', 'bluesky'],
+    platforms: ['linkedin', 'bluesky', 'mastodon'],
     status: 'success',
     created_at: new Date().toISOString()
   }

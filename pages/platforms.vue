@@ -11,48 +11,6 @@
     <!-- Connected Platforms List -->
     <section class="platforms-grid" aria-label="Available social media platforms">
 
-      <!-- Twitter/X -->
-      <article class="platform-card" :class="{ 'platform-connected': isConnected('twitter') }">
-        <div class="platform-header">
-          <div class="platform-info">
-            <h3>Twitter / X</h3>
-            <p class="platform-description">Post to your Twitter/X account</p>
-          </div>
-          <div class="platform-status">
-            <span v-if="isConnected('twitter')" class="status-badge status-connected">
-              Connected
-            </span>
-            <span v-else class="status-badge status-disconnected">
-              Not connected
-            </span>
-          </div>
-        </div>
-
-        <div v-if="isConnected('twitter')" class="platform-details">
-          <p><strong>Username:</strong> @{{ getConnection('twitter')?.platform_username }}</p>
-          <p><strong>Connected:</strong> {{ formatDate(getConnection('twitter')?.created_at) }}</p>
-        </div>
-
-        <div class="platform-actions">
-          <button
-            v-if="!isConnected('twitter')"
-            @click="connectPlatform('twitter')"
-            class="btn btn-primary"
-            :disabled="loading"
-          >
-            Connect Twitter/X
-          </button>
-          <button
-            v-else
-            @click="disconnectPlatform('twitter')"
-            class="btn btn-outline"
-            :disabled="loading"
-          >
-            Disconnect
-          </button>
-        </div>
-      </article>
-
       <!-- Bluesky -->
       <article class="platform-card" :class="{ 'platform-connected': isConnected('bluesky') }">
         <div class="platform-header">
@@ -80,16 +38,14 @@
             v-if="!isConnected('bluesky')"
             @click="showBlueskyModal = true"
             class="btn btn-primary"
-            :disabled="loading"
-          >
+            :disabled="loading">
             Connect Bluesky
           </button>
           <button
             v-else
             @click="disconnectPlatform('bluesky')"
             class="btn btn-outline"
-            :disabled="loading"
-          >
+            :disabled="loading">
             Disconnect
           </button>
         </div>
@@ -122,103 +78,58 @@
             v-if="!isConnected('mastodon')"
             @click="showMastodonModal = true"
             class="btn btn-primary"
-            :disabled="loading"
-          >
+            :disabled="loading">
             Connect Mastodon
           </button>
           <button
             v-else
             @click="disconnectPlatform('mastodon')"
             class="btn btn-outline"
-            :disabled="loading"
-          >
+            :disabled="loading">
             Disconnect
           </button>
         </div>
       </article>
 
       <!-- LinkedIn -->
-<article class="platform-card" :class="{ 'platform-connected': isConnected('linkedin') }">
-  <div class="platform-header">
-    <div class="platform-info">
-      <h3>LinkedIn</h3>
-      <p class="platform-description">Post to your LinkedIn profile</p>
-    </div>
-    <div class="platform-status">
-      <span v-if="isConnected('linkedin')" class="status-badge status-connected">
-        Connected
-      </span>
-      <span v-else class="status-badge status-disconnected">
-        Not connected
-      </span>
-    </div>
-  </div>
-
-  <div v-if="isConnected('linkedin')" class="platform-details">
-    <p><strong>Name:</strong> {{ getConnection('linkedin')?.platform_username }}</p>
-    <p><strong>Connected:</strong> {{ formatDate(getConnection('linkedin')?.created_at) }}</p>
-  </div>
-
-  <div class="platform-actions">
-    <button
-      v-if="!isConnected('linkedin')"
-      @click="connectPlatform('linkedin')"
-      class="btn btn-primary"
-      :disabled="loading"
-    >
-      Connect LinkedIn
-    </button>
-    <button
-      v-else
-      @click="disconnectPlatform('linkedin')"
-      class="btn btn-outline"
-      :disabled="loading"
-    >
-      Disconnect
-    </button>
-  </div>
-</article>
-
-      <!-- Threads (Coming Soon) -->
-      <article class="platform-card platform-disabled">
+      <article class="platform-card" :class="{ 'platform-connected': isConnected('linkedin') }">
         <div class="platform-header">
           <div class="platform-info">
-            <h3>Threads</h3>
-            <p class="platform-description">Coming soon</p>
+            <h3>LinkedIn</h3>
+            <p class="platform-description">Post to your LinkedIn profile</p>
           </div>
           <div class="platform-status">
-            <span class="status-badge status-coming-soon">
-              Coming Soon
+            <span v-if="isConnected('linkedin')" class="status-badge status-connected">
+              Connected
+            </span>
+            <span v-else class="status-badge status-disconnected">
+              Not connected
             </span>
           </div>
         </div>
+
+        <div v-if="isConnected('linkedin')" class="platform-details">
+          <p><strong>Name:</strong> {{ getConnection('linkedin')?.platform_username }}</p>
+          <p><strong>Connected:</strong> {{ formatDate(getConnection('linkedin')?.created_at) }}</p>
+        </div>
+
         <div class="platform-actions">
-          <button class="btn btn-outline" disabled>
-            Coming Soon
+          <button
+            v-if="!isConnected('linkedin')"
+            @click="connectPlatform('linkedin')"
+            class="btn btn-primary"
+            :disabled="loading">
+            Connect LinkedIn
+          </button>
+          <button
+            v-else
+            @click="disconnectPlatform('linkedin')"
+            class="btn btn-outline"
+            :disabled="loading">
+            Disconnect
           </button>
         </div>
       </article>
-
-      <!-- Facebook (Coming Soon) -->
-      <article class="platform-card platform-disabled">
-        <div class="platform-header">
-          <div class="platform-info">
-            <h3>Facebook</h3>
-            <p class="platform-description">Coming soon</p>
-          </div>
-          <div class="platform-status">
-            <span class="status-badge status-coming-soon">
-              Coming Soon
-            </span>
-          </div>
-        </div>
-        <div class="platform-actions">
-          <button class="btn btn-outline" disabled>
-            Coming Soon
-          </button>
-        </div>
-      </article>
-
     </section>
 
     <!-- Bluesky Modal -->
@@ -234,8 +145,7 @@
               v-model="blueskyHandle"
               type="text"
               placeholder="username.bsky.social"
-              required
-            />
+              required />
           </div>
 
           <div class="form-group">
@@ -245,8 +155,7 @@
               v-model="blueskyPassword"
               type="password"
               placeholder="xxxx-xxxx-xxxx-xxxx"
-              required
-            />
+              required />
             <p style="font-size: 0.875rem; color: var(--color-text-muted); margin-top: 0.5rem;">
               Generate an app password at
               <a href="https://bsky.app/settings/app-passwords" target="_blank" rel="noopener">
@@ -281,8 +190,7 @@
               v-model="mastodonInstance"
               type="url"
               placeholder="https://mastodon.social"
-              required
-            />
+              required />
             <p style="font-size: 0.875rem; color: var(--color-text-muted); margin-top: 0.5rem;">
               Enter your Mastodon instance URL (e.g., mastodon.social, fosstodon.org)
             </p>
@@ -479,7 +387,9 @@ const disconnectPlatform = async (platform: string) => {
       text: `Successfully disconnected ${platform}`
     }
 
+    console.log('Before reload, connections:', connections.value.length)
     await loadConnections()
+    console.log('After reload, connections:', connections.value.length)
   } catch (error: any) {
     statusMessage.value = {
       type: 'error',

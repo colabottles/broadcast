@@ -4,9 +4,9 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const supabase = createClient(config.public.supabase.url, config.supabaseServiceKey)
 
-  // Get user from session
-  const authHeader = getHeader(event, 'authorization')
-  if (!authHeader) {
+  // Get user from middleware (same as Bluesky/Mastodon)
+  const user = event.context.user
+  if (!user) {
     throw createError({
       statusCode: 401,
       message: 'Unauthorized'
@@ -14,15 +14,6 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // Get user from Supabase
-    const { data: { user } } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
-    if (!user) {
-      throw createError({
-        statusCode: 401,
-        message: 'Unauthorized'
-      })
-    }
-
     // Generate random state for CSRF protection
     const state = crypto.randomUUID()
 

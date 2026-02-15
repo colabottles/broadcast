@@ -102,7 +102,7 @@
           <li>Interfere with or disrupt the Service</li>
           <li>Attempt to gain unauthorized access to any systems</li>
           <li>Use the Service for automated or bulk posting beyond reasonable limits</li>
-          <li>Violate the terms of service of connected platforms (Twitter, LinkedIn, etc.)</li>
+          <li>Violate the terms of service of connected platforms (Bluesky, LinkedIn, etc.)</li>
         </ul>
 
         <h3>5.2 Content Responsibility</h3>
@@ -150,7 +150,7 @@
       <section>
         <h2>7. Third-Party Services</h2>
         <p>
-          The Service integrates with third-party platforms (Twitter, Bluesky, Mastodon, LinkedIn, etc.).
+          The Service integrates with third-party platforms (Bluesky, Mastodon, LinkedIn, etc.).
           Your use of these platforms is subject to their respective terms and privacy policies. We are not
           responsible for:
         </p>

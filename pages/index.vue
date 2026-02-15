@@ -31,6 +31,9 @@
             Longest limit: {{ maxCharLimit }}
           </span>
         </div>
+        <div v-if="charWarning" class="char-warning" role="alert">
+          ⚠️ {{ charWarning }}
+        </div>
         <p id="content-help" class="sr-only">
           Enter the content you want to post across your selected social media platforms
         </p>
@@ -233,7 +236,7 @@
           type="submit"
           class="btn btn-primary"
           :disabled="isSubmitting"
-          :aria-busy="isSubmitting"
+          :aria-busy="isSubmitting  || charCount > 300"
         >
           <span v-if="isSubmitting" class="spinner" aria-hidden="true"></span>
           {{ isSubmitting ? 'Posting...' : 'Post to Platforms' }}
@@ -332,16 +335,6 @@ interface PostResponse {
 // Available platforms with icons
 const availablePlatforms = ref<Platform[]>([
   {
-    id: 'twitter',
-    name: 'Twitter/X',
-    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-    </svg>`,
-    charLimit: 280,
-    tagFormat: 'Hashtags (#tag)',
-    hashtagSymbol: '#'
-  },
-  {
     id: 'bluesky',
     name: 'Bluesky',
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -400,26 +393,38 @@ const statusMessage = ref<StatusMessage | null>(null)
 
 // Character counting
 const charCount = computed(() => postContent.value.length)
+const charCountClass = computed(() => {
+  if (charCount.value > 300) return 'char-counter-error'
+  if (charCount.value > 280) return 'char-counter-warning'
+  return ''
+})
+
+// Add warning message
+const charWarning = computed(() => {
+  if (charCount.value > 300) {
+    return 'Post exceeds Bluesky limit (300 chars). It will fail on Bluesky.'
+  }
+  return ''
+})
 
 const maxCharLimit = computed(() => {
   if (selectedPlatforms.value.length === 0) return 0
 
-  const selectedPlatformObjects = selectedPlatforms.value
-    .map(id => platforms.value.find(p => p.id === id))
-    .filter(Boolean) as Platform[]
+  // Platform character limits
+  const limits: Record<string, number> = {
+    bluesky: 300,
+    mastodon: 500,
+    linkedin: 3000
+  }
 
-  return Math.min(...selectedPlatformObjects.map(p => p.charLimit))
-})
+  // Find the minimum limit among selected platforms (most restrictive)
+  const selectedLimits = selectedPlatforms.value
+    .map(id => {
+      const platform = platforms.value.find(p => p.id === id)
+      return platform ? limits[platform.id] || 500 : 500
+    })
 
-const charCountClass = computed(() => {
-  if (selectedPlatforms.value.length === 0) return ''
-
-  const limit = maxCharLimit.value
-  const count = charCount.value
-
-  if (count > limit) return 'danger'
-  if (count > limit * 0.9) return 'warning'
-  return ''
+  return Math.min(...selectedLimits)
 })
 
 // Methods
@@ -779,3 +784,24 @@ useHead({
   ]
 })
 </script>
+
+<style scoped>
+.char-counter-warning {
+  color: var(--color-warning, #f59e0b);
+}
+
+.char-counter-error {
+  color: var(--color-error, #ef4444);
+  font-weight: bold;
+}
+
+.char-warning {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 4px;
+  color: #92400e;
+  font-size: 0.875rem;
+}
+</style>

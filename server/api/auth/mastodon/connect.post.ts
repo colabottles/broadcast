@@ -4,9 +4,9 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const supabase = createClient(config.public.supabase.url, config.supabaseServiceKey)
 
-  // Get user from session
-  const authHeader = getHeader(event, 'authorization')
-  if (!authHeader) {
+  // Get user from middleware (same as Bluesky)
+  const user = event.context.user
+  if (!user) {
     throw createError({
       statusCode: 401,
       message: 'Unauthorized'
@@ -23,15 +23,6 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // Get user from Supabase
-    const { data: { user } } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
-    if (!user) {
-      throw createError({
-        statusCode: 401,
-        message: 'Unauthorized'
-      })
-    }
-
     // Register app with Mastodon instance
     const registerResponse = await fetch(`${body.instance}/api/v1/apps`, {
       method: 'POST',
@@ -46,11 +37,16 @@ export default defineEventHandler(async (event) => {
       })
     })
 
+    console.log('Mastodon registration status:', registerResponse.status)
+
     if (!registerResponse.ok) {
+      const errorText = await registerResponse.text()
+      console.error('Mastodon registration error:', errorText)
       throw new Error('Failed to register with Mastodon instance')
     }
 
     const appData = await registerResponse.json()
+    console.log('Mastodon app registered successfully')
 
     // Generate state for CSRF protection
     const state = crypto.randomUUID()

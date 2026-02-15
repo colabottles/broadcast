@@ -1,7 +1,66 @@
 import { createClient } from '@supabase/supabase-js'
-import { TwitterApi } from 'twitter-api-v2'
 import { AtpAgent } from '@atproto/api'
 
+import sharp from 'sharp'
+
+// Platform image size limits (in KB)
+const IMAGE_SIZE_LIMITS = {
+  bluesky: 950,    // ~1MB limit
+  mastodon: 8192,  // 8MB limit
+  linkedin: 5120   // 5MB limit
+}
+
+// At the top of server/api/post.ts, add this helper function:
+async function compressImage(
+  imageBuffer: ArrayBuffer,
+  maxSizeKB: number = 950
+): Promise<Uint8Array> {
+  const currentSizeKB = imageBuffer.byteLength / 1024
+
+  // If already under limit, return as-is
+  if (currentSizeKB <= maxSizeKB) {
+    return new Uint8Array(imageBuffer)
+  }
+
+  console.log(`Compressing image from ${currentSizeKB.toFixed(0)}KB to fit under ${maxSizeKB}KB`)
+
+  // Convert ArrayBuffer to Buffer for sharp
+  const buffer = Buffer.from(new Uint8Array(imageBuffer))
+
+  // Start with quality 85 and reduce if needed
+  let quality = 85
+  let compressed: Buffer
+
+  while (quality > 20) {
+    compressed = await sharp(buffer)
+      .jpeg({ quality, mozjpeg: true })
+      .toBuffer()
+
+    const compressedSizeKB = compressed.byteLength / 1024
+
+    if (compressedSizeKB <= maxSizeKB) {
+      console.log(`Compressed to ${compressedSizeKB.toFixed(0)}KB at quality ${quality}`)
+      return new Uint8Array(compressed)
+    }
+
+    quality -= 10
+  }
+
+  // If still too large after max compression, resize the image
+  const resized = await sharp(buffer)
+    .resize(2048, 2048, { fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 80, mozjpeg: true })
+    .toBuffer()
+
+  const finalSizeKB = resized.byteLength / 1024
+
+  if (finalSizeKB > maxSizeKB) {
+    throw new Error(`Unable to compress image to under ${maxSizeKB}KB (got ${finalSizeKB.toFixed(0)}KB)`)
+  }
+
+  console.log(`Resized and compressed to ${finalSizeKB.toFixed(0)}KB`)
+  return new Uint8Array(resized)
+}
 interface PostResult {
   success: boolean
   post_id?: string
@@ -50,11 +109,17 @@ export default defineEventHandler(async (event) => {
   }
 
   // Check if user can schedule posts (Creator+ plans)
-  if (isScheduled && profile && !['creator', 'professional', 'enterprise'].includes(profile.subscription_tier)) {
-    throw createError({
-      statusCode: 403,
-      message: 'Upgrade to Creator plan or higher to schedule posts.'
-    })
+  if (!isScheduled && profile) {
+    // Unlimited for paid plans
+    const unlimitedTiers = ['creator', 'professional', 'enterprise']
+    const hasUnlimitedPosts = unlimitedTiers.includes(profile.subscription_tier)
+
+    if (!hasUnlimitedPosts && profile.posts_this_month >= profile.post_limit) {
+      throw createError({
+        statusCode: 403,
+        message: `Post limit reached (${profile.posts_this_month}/${profile.post_limit}). Upgrade to Creator plan for unlimited posts.`
+      })
+    }
   }
 
   // Get user's platform connections
@@ -112,21 +177,19 @@ export default defineEventHandler(async (event) => {
 
   // Post to each platform
   for (const connection of connections) {
+    console.log('Processing platform:', connection.platform)
     try {
       let result: PostResult
 
       switch (connection.platform) {
-        case 'twitter':
-          result = await postToTwitter(connection, body.content)
-          break
         case 'bluesky':
           result = await postToBluesky(connection, body.content, body.images, body.tags)
           break
         case 'mastodon':
-          result = await postToMastodon(connection, body.content)
+          result = await postToMastodon(connection, body.content, body.images, body.tags)
           break
         case 'linkedin':
-          result = await postToLinkedIn(connection, body.content)
+          result = await postToLinkedIn(connection, body.content, body.images, body.tags)
           break
         default:
           result = {
@@ -153,6 +216,7 @@ export default defineEventHandler(async (event) => {
           platform_post_url: result.post_url
         })
     } catch (error: any) {
+      console.error(`Error posting to ${connection.platform}:`, error) // ADD THIS
       results[connection.platform] = {
         success: false,
         message: error.message || 'Failed to post'
@@ -189,22 +253,6 @@ export default defineEventHandler(async (event) => {
 })
 
 // Platform-specific posting functions
-async function postToTwitter(connection: any, content: string): Promise<PostResult> {
-  const client = new TwitterApi(connection.access_token)
-
-  try {
-    const tweet = await client.v2.tweet(content)
-
-    return {
-      success: true,
-      post_id: tweet.data.id,
-      post_url: `https://twitter.com/${connection.platform_username}/status/${tweet.data.id}`
-    }
-  } catch (error: any) {
-    throw new Error(error.message || 'Failed to post to Twitter')
-  }
-}
-
 async function postToBluesky(connection: any, content: string, images?: any[], tags?: string[]): Promise<PostResult> {
   const agent = new AtpAgent({
     service: 'https://bsky.social'
@@ -276,7 +324,10 @@ async function postToBluesky(connection: any, content: string, images?: any[], t
         const imageResponse = await fetch(image.url)
         const imageBuffer = await imageResponse.arrayBuffer()
 
-        const uploadResponse = await agent.uploadBlob(new Uint8Array(imageBuffer), {
+        // Compress if needed
+        const compressedImage = await compressImage(imageBuffer, 900)
+
+        const uploadResponse = await agent.uploadBlob(compressedImage, {
           encoding: 'image/jpeg'
         })
 
@@ -297,30 +348,92 @@ async function postToBluesky(connection: any, content: string, images?: any[], t
       postData
     )
 
+    console.log('Bluesky post created:', response.uri) // ADD THIS
+
     return {
       success: true,
       post_id: response.uri,
       post_url: `https://bsky.app/profile/${connection.platform_username}/post/${response.uri.split('/').pop()}`
     }
   } catch (error: any) {
+    console.error('Bluesky posting error:', error)
+    console.error('Error details:', JSON.stringify(error, null, 2))
     throw new Error(error.message || 'Failed to post to Bluesky')
   }
 }
 
-async function postToMastodon(connection: any, content: string): Promise<PostResult> {
+async function postToMastodon(connection: any, content: string, images?: any[], tags?: string[]): Promise<PostResult> {
   try {
+    // Add hashtags to content
+    let fullText = content
+    if (tags && tags.length > 0) {
+      const hashtags = tags.map(tag => `#${tag.replace(/^#/, '')}`).join(' ')
+      fullText = `${content}\n\n${hashtags}`
+    }
+
+    // Handle media uploads first if there are images
+    const mediaIds: string[] = []
+
+    if (images && images.length > 0) {
+      for (const image of images) {
+        // Fetch the image from Supabase storage
+        const imageResponse = await fetch(image.url)
+        const imageBuffer = await imageResponse.arrayBuffer()
+
+        // Compress if needed (Mastodon limit is 8MB, very generous)
+        const compressedImage = await compressImage(imageBuffer, IMAGE_SIZE_LIMITS.mastodon)
+
+        // Upload to Mastodon
+        const formData = new FormData()
+        formData.append('file', new Blob([Buffer.from(compressedImage)]), 'image.jpg')
+        if (image.alt_text) {
+          formData.append('description', image.alt_text)
+        }
+
+        const uploadResponse = await fetch(`${connection.instance_url}/api/v2/media`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${connection.access_token}`
+          },
+          body: formData
+        })
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload image to Mastodon')
+        }
+
+        const uploadData = await uploadResponse.json()
+        mediaIds.push(uploadData.id)
+      }
+    }
+
+    // Create the post
+    const postBody: any = {
+      status: fullText
+    }
+
+    if (mediaIds.length > 0) {
+      postBody.media_ids = mediaIds
+    }
+
+    console.log('Posting to Mastodon:', {
+      instance: connection.instance_url,
+      textLength: fullText.length,
+      mediaCount: mediaIds.length
+    })
+
     const response = await fetch(`${connection.instance_url}/api/v1/statuses`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${connection.access_token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        status: content
-      })
+      body: JSON.stringify(postBody)
     })
 
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Mastodon API error:', errorText)
       throw new Error('Failed to post to Mastodon')
     }
 
@@ -332,12 +445,115 @@ async function postToMastodon(connection: any, content: string): Promise<PostRes
       post_url: data.url
     }
   } catch (error: any) {
+    console.error('Mastodon posting error:', error)
+    console.error('Error details:', JSON.stringify(error, null, 2))
     throw new Error(error.message || 'Failed to post to Mastodon')
   }
 }
 
-async function postToLinkedIn(connection: any, content: string): Promise<PostResult> {
+async function postToLinkedIn(connection: any, content: string, images?: any[], tags?: string[]): Promise<PostResult> {
   try {
+    // Add hashtags to content (LinkedIn treats them as regular text)
+    let fullText = content
+    if (tags && tags.length > 0) {
+      const hashtags = tags.map(tag => `#${tag.replace(/^#/, '')}`).join(' ')
+      fullText = `${content}\n\n${hashtags}`
+    }
+
+    // LinkedIn requires the person's URN
+    const personUrn = `urn:li:person:${connection.platform_user_id}`
+
+    let postBody: any = {
+      author: personUrn,
+      lifecycleState: 'PUBLISHED',
+      specificContent: {
+        'com.linkedin.ugc.ShareContent': {
+          shareCommentary: {
+            text: fullText
+          },
+          shareMediaCategory: images && images.length > 0 ? 'IMAGE' : 'NONE'
+        }
+      },
+      visibility: {
+        'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+      }
+    }
+
+    // Handle images if provided
+    if (images && images.length > 0) {
+      const media = []
+
+      for (const image of images) {
+        // Step 1: Register upload
+        const registerResponse = await fetch('https://api.linkedin.com/v2/assets?action=registerUpload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${connection.access_token}`,
+            'Content-Type': 'application/json',
+            'X-Restli-Protocol-Version': '2.0.0'
+          },
+          body: JSON.stringify({
+            registerUploadRequest: {
+              recipes: ['urn:li:digitalmediaRecipe:feedshare-image'],
+              owner: personUrn,
+              serviceRelationships: [{
+                relationshipType: 'OWNER',
+                identifier: 'urn:li:userGeneratedContent'
+              }]
+            }
+          })
+        })
+
+        if (!registerResponse.ok) {
+          const errorText = await registerResponse.text()
+          console.error('LinkedIn register upload error:', errorText)
+          throw new Error('Failed to register image upload with LinkedIn')
+        }
+
+        const registerData = await registerResponse.json()
+        const uploadUrl = registerData.value.uploadMechanism['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'].uploadUrl
+        const asset = registerData.value.asset
+
+        // Step 2: Fetch and compress image
+        const imageResponse = await fetch(image.url)
+        const imageBuffer = await imageResponse.arrayBuffer()
+        const compressedImage = await compressImage(imageBuffer, IMAGE_SIZE_LIMITS.linkedin)
+
+        // Step 3: Upload the image
+        const uploadResponse = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${connection.access_token}`
+          },
+          body: Buffer.from(compressedImage)
+        })
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload image to LinkedIn')
+        }
+
+        media.push({
+          status: 'READY',
+          description: {
+            text: image.alt_text || ''
+          },
+          media: asset,
+          title: {
+            text: 'Image'
+          }
+        })
+      }
+
+      // Add media to post
+      postBody.specificContent['com.linkedin.ugc.ShareContent'].media = media
+    }
+
+    console.log('Posting to LinkedIn:', {
+      textLength: fullText.length,
+      mediaCount: images?.length || 0
+    })
+
+    // Create the post
     const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
       method: 'POST',
       headers: {
@@ -345,24 +561,12 @@ async function postToLinkedIn(connection: any, content: string): Promise<PostRes
         'Content-Type': 'application/json',
         'X-Restli-Protocol-Version': '2.0.0'
       },
-      body: JSON.stringify({
-        author: `urn:li:person:${connection.platform_user_id}`,
-        lifecycleState: 'PUBLISHED',
-        specificContent: {
-          'com.linkedin.ugc.ShareContent': {
-            shareCommentary: {
-              text: content
-            },
-            shareMediaCategory: 'NONE'
-          }
-        },
-        visibility: {
-          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
-        }
-      })
+      body: JSON.stringify(postBody)
     })
 
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error('LinkedIn API error:', errorText)
       throw new Error('Failed to post to LinkedIn')
     }
 
@@ -374,6 +578,7 @@ async function postToLinkedIn(connection: any, content: string): Promise<PostRes
       post_url: `https://www.linkedin.com/feed/update/${data.id}`
     }
   } catch (error: any) {
+    console.error('LinkedIn posting error:', error)
     throw new Error(error.message || 'Failed to post to LinkedIn')
   }
 }

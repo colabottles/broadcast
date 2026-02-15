@@ -72,24 +72,24 @@ create table public.profiles (
 alter table public.profiles enable row level security;
 
 -- Policies: Users can only see and update their own profile
-create policy "Users can view own profile" 
-  on public.profiles for select 
+create policy "Users can view own profile"
+  on public.profiles for select
   using ( auth.uid() = id );
 
-create policy "Users can update own profile" 
-  on public.profiles for update 
+create policy "Users can update own profile"
+  on public.profiles for update
   using ( auth.uid() = id );
 
 -- Function to create profile on signup
-create or replace function public.handle_new_user() 
-returns trigger 
-language plpgsql 
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
 security definer set search_path = public
 as $$
 begin
   insert into public.profiles (id, full_name, avatar_url)
   values (
-    new.id, 
+    new.id,
     new.raw_user_meta_data->>'full_name',
     new.raw_user_meta_data->>'avatar_url'
   );
@@ -110,7 +110,7 @@ create trigger on_auth_user_created
 create table public.platform_connections (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users on delete cascade not null,
-  platform text not null check (platform in ('twitter', 'bluesky', 'mastodon', 'linkedin', 'threads', 'facebook')),
+  platform text not null check (platform in ('bluesky', 'mastodon', 'linkedin')),
   platform_user_id text,
   platform_username text,
   access_token text not null,
@@ -125,20 +125,20 @@ create table public.platform_connections (
 
 alter table public.platform_connections enable row level security;
 
-create policy "Users can view own connections" 
-  on public.platform_connections for select 
+create policy "Users can view own connections"
+  on public.platform_connections for select
   using ( auth.uid() = user_id );
 
-create policy "Users can insert own connections" 
-  on public.platform_connections for insert 
+create policy "Users can insert own connections"
+  on public.platform_connections for insert
   with check ( auth.uid() = user_id );
 
-create policy "Users can update own connections" 
-  on public.platform_connections for update 
+create policy "Users can update own connections"
+  on public.platform_connections for update
   using ( auth.uid() = user_id );
 
-create policy "Users can delete own connections" 
-  on public.platform_connections for delete 
+create policy "Users can delete own connections"
+  on public.platform_connections for delete
   using ( auth.uid() = user_id );
 
 -- ============================================
@@ -158,12 +158,12 @@ create table public.oauth_state (
 
 alter table public.oauth_state enable row level security;
 
-create policy "Users can view own oauth state" 
-  on public.oauth_state for select 
+create policy "Users can view own oauth state"
+  on public.oauth_state for select
   using ( auth.uid() = user_id );
 
-create policy "Users can insert own oauth state" 
-  on public.oauth_state for insert 
+create policy "Users can insert own oauth state"
+  on public.oauth_state for insert
   with check ( auth.uid() = user_id );
 
 -- Auto-delete expired OAuth states
@@ -190,20 +190,20 @@ create table public.posts (
 
 alter table public.posts enable row level security;
 
-create policy "Users can view own posts" 
-  on public.posts for select 
+create policy "Users can view own posts"
+  on public.posts for select
   using ( auth.uid() = user_id );
 
-create policy "Users can insert own posts" 
-  on public.posts for insert 
+create policy "Users can insert own posts"
+  on public.posts for insert
   with check ( auth.uid() = user_id );
 
-create policy "Users can update own posts" 
-  on public.posts for update 
+create policy "Users can update own posts"
+  on public.posts for update
   using ( auth.uid() = user_id );
 
-create policy "Users can delete own posts" 
-  on public.posts for delete 
+create policy "Users can delete own posts"
+  on public.posts for delete
   using ( auth.uid() = user_id );
 
 -- ============================================
@@ -224,12 +224,12 @@ create table public.post_results (
 
 alter table public.post_results enable row level security;
 
-create policy "Users can view results for own posts" 
-  on public.post_results for select 
-  using ( 
+create policy "Users can view results for own posts"
+  on public.post_results for select
+  using (
     exists (
-      select 1 from public.posts 
-      where posts.id = post_results.post_id 
+      select 1 from public.posts
+      where posts.id = post_results.post_id
       and posts.user_id = auth.uid()
     )
   );
@@ -251,8 +251,8 @@ create table public.usage_tracking (
 
 alter table public.usage_tracking enable row level security;
 
-create policy "Users can view own usage" 
-  on public.usage_tracking for select 
+create policy "Users can view own usage"
+  on public.usage_tracking for select
   using ( auth.uid() = user_id );
 
 -- ============================================
@@ -278,12 +278,12 @@ create table public.post_analytics (
 
 alter table public.post_analytics enable row level security;
 
-create policy "Users can view analytics for own posts" 
-  on public.post_analytics for select 
-  using ( 
+create policy "Users can view analytics for own posts"
+  on public.post_analytics for select
+  using (
     exists (
-      select 1 from public.posts 
-      where posts.id = post_analytics.post_id 
+      select 1 from public.posts
+      where posts.id = post_analytics.post_id
       and posts.user_id = auth.uid()
     )
   );
@@ -306,20 +306,20 @@ create table public.teams (
 
 alter table public.teams enable row level security;
 
-create policy "Team owners can view their teams" 
-  on public.teams for select 
+create policy "Team owners can view their teams"
+  on public.teams for select
   using ( auth.uid() = owner_id );
 
-create policy "Team owners can create teams" 
-  on public.teams for insert 
+create policy "Team owners can create teams"
+  on public.teams for insert
   with check ( auth.uid() = owner_id );
 
-create policy "Team owners can update their teams" 
-  on public.teams for update 
+create policy "Team owners can update their teams"
+  on public.teams for update
   using ( auth.uid() = owner_id );
 
-create policy "Team owners can delete their teams" 
-  on public.teams for delete 
+create policy "Team owners can delete their teams"
+  on public.teams for delete
   using ( auth.uid() = owner_id );
 
 -- ============================================
@@ -342,43 +342,43 @@ create table public.team_members (
 
 alter table public.team_members enable row level security;
 
-create policy "Team members can view team membership" 
-  on public.team_members for select 
-  using ( 
+create policy "Team members can view team membership"
+  on public.team_members for select
+  using (
     auth.uid() = user_id OR
     exists (
-      select 1 from public.teams 
-      where teams.id = team_members.team_id 
+      select 1 from public.teams
+      where teams.id = team_members.team_id
       and teams.owner_id = auth.uid()
     )
   );
 
-create policy "Team owners can invite members" 
-  on public.team_members for insert 
-  with check ( 
+create policy "Team owners can invite members"
+  on public.team_members for insert
+  with check (
     exists (
-      select 1 from public.teams 
-      where teams.id = team_id 
+      select 1 from public.teams
+      where teams.id = team_id
       and teams.owner_id = auth.uid()
     )
   );
 
-create policy "Team owners can update members" 
-  on public.team_members for update 
-  using ( 
+create policy "Team owners can update members"
+  on public.team_members for update
+  using (
     exists (
-      select 1 from public.teams 
-      where teams.id = team_id 
+      select 1 from public.teams
+      where teams.id = team_id
       and teams.owner_id = auth.uid()
     )
   );
 
-create policy "Team owners can remove members" 
-  on public.team_members for delete 
-  using ( 
+create policy "Team owners can remove members"
+  on public.team_members for delete
+  using (
     exists (
-      select 1 from public.teams 
-      where teams.id = team_id 
+      select 1 from public.teams
+      where teams.id = team_id
       and teams.owner_id = auth.uid()
     )
   );
@@ -397,25 +397,25 @@ declare
   current_month date;
 begin
   current_month := date_trunc('month', now())::date;
-  
+
   -- Insert or update usage tracking
   insert into public.usage_tracking (user_id, month, posts_count)
   values (new.user_id, current_month, 1)
   on conflict (user_id, month)
-  do update set 
+  do update set
     posts_count = usage_tracking.posts_count + 1,
     updated_at = now();
-    
+
   -- Update profile posts_this_month
   update public.profiles
   set posts_this_month = (
-    select posts_count 
-    from public.usage_tracking 
-    where user_id = new.user_id 
+    select posts_count
+    from public.usage_tracking
+    where user_id = new.user_id
     and month = current_month
   )
   where id = new.user_id;
-  
+
   return new;
 end;
 $$;
@@ -423,7 +423,7 @@ $$;
 -- Trigger to track post count when post is published
 create trigger on_post_published
   after insert or update of status on public.posts
-  for each row 
+  for each row
   when (new.status = 'published')
   execute procedure public.increment_post_count();
 

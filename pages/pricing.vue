@@ -16,13 +16,13 @@
               <span class="price-amount">$0</span>
               <span class="price-period">/month</span>
             </div>
-            <p class="pricing-description">Perfect for getting started</p>
+            <p class="pricing-description">Perfect for trying out Broadcast</p>
           </div>
 
           <ul class="pricing-features" role="list">
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>2 social platforms</span>
+              <span>Up to 2 platforms</span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
@@ -30,15 +30,7 @@
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>Tag management</span>
-            </li>
-            <li>
-              <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>Platform previews</span>
-            </li>
-            <li>
-              <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>Draft saving</span>
+              <span>Basic tag management</span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
@@ -51,7 +43,7 @@
             aria-label="Start with Starter plan"
             @click="handlePlanSelect('starter')"
           >
-            Get Started
+            Get Started Free
           </button>
         </article>
 
@@ -64,16 +56,16 @@
           <div class="pricing-card-header">
             <h3 id="creator-heading">Creator</h3>
             <div class="pricing-price">
-              <span class="price-amount">$15</span>
+              <span class="price-amount">$6</span>
               <span class="price-period">/month</span>
             </div>
-            <p class="pricing-description">For serious content creators</p>
+            <p class="pricing-description">Everything you need to create</p>
           </div>
 
           <ul class="pricing-features" role="list">
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span><strong>5 social platforms</strong></span>
+              <span><strong>All 3 platforms</strong></span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
@@ -85,15 +77,23 @@
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
+              <span><strong>Image uploads with alt text</strong></span>
+            </li>
+            <li>
+              <span class="feature-icon" aria-hidden="true">✓</span>
               <span>Advanced tag management</span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>Image uploads with alt text</span>
+              <span>Draft saving & templates</span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>Post history & editing</span>
+              <span>Post history & analytics</span>
+            </li>
+            <li>
+              <span class="feature-icon" aria-hidden="true">✓</span>
+              <span>Platform previews</span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
@@ -118,7 +118,7 @@
           <div class="pricing-card-header">
             <h3 id="professional-heading">Professional</h3>
             <div class="pricing-price">
-              <span class="price-amount">$49</span>
+              <span class="price-amount">$29</span>
               <span class="price-period">/month</span>
             </div>
             <p class="pricing-description">For teams and businesses</p>
@@ -127,11 +127,7 @@
           <ul class="pricing-features" role="list">
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span><strong>All platforms</strong></span>
-            </li>
-            <li>
-              <span class="feature-icon" aria-hidden="true">✓</span>
-              <span><strong>Unlimited everything</strong></span>
+              <span><strong>Everything in Creator</strong></span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
@@ -139,7 +135,11 @@
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span><strong>Advanced analytics</strong></span>
+              <span><strong>Advanced analytics & insights</strong></span>
+            </li>
+            <li>
+              <span class="feature-icon" aria-hidden="true">✓</span>
+              <span><strong>Content calendar view</strong></span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
@@ -147,11 +147,11 @@
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>Content calendar</span>
+              <span>Custom approval workflows</span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>Custom approval workflows</span>
+              <span>Branded reports</span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
@@ -246,10 +246,10 @@
           <tbody>
             <tr>
               <th scope="row">Social Platforms</th>
-              <td>2</td>
-              <td>5</td>
-              <td>All (6+)</td>
-              <td>All (6+)</td>
+              <td>Up to 2</td>
+              <td>All 3</td>
+              <td>All 3</td>
+              <td>All 3</td>
             </tr>
             <tr>
               <th scope="row">Posts per Month</th>
@@ -273,11 +273,18 @@
               <td><span aria-label="Included">✓</span></td>
             </tr>
             <tr>
-              <th scope="row">Post History</th>
+              <th scope="row">Draft Saving</th>
               <td><span aria-label="Not included">–</span></td>
               <td><span aria-label="Included">✓</span></td>
               <td><span aria-label="Included">✓</span></td>
               <td><span aria-label="Included">✓</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Post Analytics</th>
+              <td><span aria-label="Not included">–</span></td>
+              <td>Basic</td>
+              <td>Advanced</td>
+              <td>Advanced + Custom</td>
             </tr>
             <tr>
               <th scope="row">Team Members</th>
@@ -287,11 +294,18 @@
               <td>Unlimited</td>
             </tr>
             <tr>
-              <th scope="row">Analytics</th>
+              <th scope="row">Content Calendar</th>
               <td><span aria-label="Not included">–</span></td>
-              <td>Basic</td>
-              <td>Advanced</td>
-              <td>Advanced + Custom</td>
+              <td><span aria-label="Not included">–</span></td>
+              <td><span aria-label="Included">✓</span></td>
+              <td><span aria-label="Included">✓</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Approval Workflows</th>
+              <td><span aria-label="Not included">–</span></td>
+              <td><span aria-label="Not included">–</span></td>
+              <td><span aria-label="Included">✓</span></td>
+              <td><span aria-label="Included">✓</span></td>
             </tr>
             <tr>
               <th scope="row">Multiple Accounts</th>
@@ -310,9 +324,9 @@
             <tr>
               <th scope="row">Support</th>
               <td>Community</td>
-              <td>Email</td>
-              <td>Priority</td>
-              <td>Dedicated</td>
+              <td>Priority Email</td>
+              <td>Priority + Onboarding</td>
+              <td>Dedicated Manager</td>
             </tr>
           </tbody>
         </table>
@@ -338,7 +352,7 @@
             <h3>What payment methods do you accept?</h3>
           </dt>
           <dd>
-            We accept all major credit cards (Visa, Mastercard, American Express, Discover), PayPal, and for Enterprise plans, we can arrange wire transfers or invoicing.
+            We accept all major credit cards (Visa, Mastercard, American Express, Discover) through Stripe. For Enterprise plans, we can arrange wire transfers or invoicing.
           </dd>
         </div>
 
@@ -356,7 +370,7 @@
             <h3>What happens if I exceed my post limit?</h3>
           </dt>
           <dd>
-            On the Starter plan, you'll be prompted to upgrade. We'll never charge you without permission. You can also wait until the next billing cycle when your limit resets.
+            On the Starter plan, you'll be prompted to upgrade when you reach 25 posts. We'll never charge you without permission. You can also wait until the next billing cycle when your limit resets.
           </dd>
         </div>
 
@@ -365,7 +379,7 @@
             <h3>Do you offer annual billing?</h3>
           </dt>
           <dd>
-            Yes! Annual billing saves you 20%. Creator is $144/year ($12/month equivalent) and Professional is $470/year ($39/month equivalent).
+            Yes! Annual billing saves you 20%. Creator is $58/year (save $14) and Professional is $278/year (save $70).
           </dd>
         </div>
 
@@ -374,7 +388,16 @@
             <h3>Which social platforms are supported?</h3>
           </dt>
           <dd>
-            Currently: Twitter/X, Bluesky, Mastodon, LinkedIn, Threads, and Facebook. We're constantly adding more platforms based on user demand.
+            Currently we support Bluesky, Mastodon, and LinkedIn. More platforms are coming soon!
+          </dd>
+        </div>
+
+        <div class="faq-item">
+          <dt>
+            <h3>Can I cancel anytime?</h3>
+          </dt>
+          <dd>
+            Absolutely! You can cancel your subscription at any time. You'll continue to have access until the end of your billing period.
           </dd>
         </div>
       </dl>
@@ -383,10 +406,10 @@
     <!-- CTA Section -->
     <section class="pricing-cta" aria-labelledby="cta-heading">
       <h2 id="cta-heading">Ready to start broadcasting?</h2>
-      <p>Join thousands of creators broadcasting their message across multiple platforms.</p>
+      <p>Join content creators broadcasting their message across multiple platforms.</p>
       <div class="btn-group">
-        <NuxtLink to="/auth?mode=signup" class="btn btn-primary">Start Free Trial</NuxtLink>
-        <NuxtLink to="/docs" class="btn btn-outline">View Documentation</NuxtLink>
+        <NuxtLink to="/signup" class="btn btn-primary">Start Free Trial</NuxtLink>
+        <NuxtLink to="/" class="btn btn-outline">Learn More</NuxtLink>
       </div>
     </section>
 
@@ -406,7 +429,7 @@ const handlePlanSelect = async (plan: Plan, billing?: Billing) => {
   // Starter is free, just need to sign up
   if (plan === 'starter') {
     if (!user.value) {
-      router.push('/auth?mode=signup')
+      router.push('/signup')
     } else {
       router.push('/dashboard')
     }
@@ -419,7 +442,7 @@ const handlePlanSelect = async (plan: Plan, billing?: Billing) => {
     if (process.client) {
       sessionStorage.setItem('intended_plan', JSON.stringify({ plan, billing }))
     }
-    router.push('/auth')
+    router.push('/login')
     return
   }
 
@@ -449,7 +472,7 @@ const handlePlanSelect = async (plan: Plan, billing?: Billing) => {
 // Handle contact sales
 const handleContactSales = () => {
   // In production, this would open a contact form or send to a sales page
-  window.location.href = 'mailto:sales@broadcast.app?subject=Enterprise Inquiry'
+  window.location.href = 'mailto:todd@toddl.dev?subject=Enterprise Inquiry'
 }
 
 // Check for intended plan on mount (after login redirect)
