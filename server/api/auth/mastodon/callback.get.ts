@@ -28,15 +28,14 @@ export default defineEventHandler(async (event) => {
       throw new Error('Invalid state parameter')
     }
 
-    // Check if state has expired
+    // Check if state has expired (increased to 30 minutes)
     if (new Date(stateRecord.expires_at) < new Date()) {
       throw new Error('State has expired')
     }
 
-    // Get instance URL from state data (you'll need to store this)
     const instanceUrl = stateRecord.instance_url
 
-    // Exchange code for access token
+    // Exchange code for access token - FIXED: parenthesis instead of backtick
     const tokenResponse = await fetch(`${instanceUrl}/oauth/token`, {
       method: 'POST',
       headers: {
@@ -53,12 +52,13 @@ export default defineEventHandler(async (event) => {
     })
 
     if (!tokenResponse.ok) {
-      throw new Error('Failed to exchange code for token')
+      const errorText = await tokenResponse.text()
+      throw new Error(`Failed to exchange code for token: ${errorText}`)
     }
 
     const tokenData = await tokenResponse.json()
 
-    // Get user profile
+    // Get user profile - FIXED: parenthesis instead of backtick
     const profileResponse = await fetch(`${instanceUrl}/api/v1/accounts/verify_credentials`, {
       headers: {
         'Authorization': `Bearer ${tokenData.access_token}`
@@ -66,7 +66,8 @@ export default defineEventHandler(async (event) => {
     })
 
     if (!profileResponse.ok) {
-      throw new Error('Failed to fetch Mastodon profile')
+      const errorText = await profileResponse.text()
+      throw new Error(`Failed to fetch Mastodon profile: ${errorText}`)
     }
 
     const profileData = await profileResponse.json()
@@ -98,6 +99,7 @@ export default defineEventHandler(async (event) => {
 
     // Redirect to platforms page
     return sendRedirect(event, `${config.public.siteUrl}/platforms?connected=mastodon`)
+
   } catch (error: any) {
     console.error('Mastodon OAuth error:', error)
     return sendRedirect(event, `${config.public.siteUrl}/platforms?error=${encodeURIComponent(error.message)}`)

@@ -387,9 +387,7 @@ const disconnectPlatform = async (platform: string) => {
       text: `Successfully disconnected ${platform}`
     }
 
-    console.log('Before reload, connections:', connections.value.length)
     await loadConnections()
-    console.log('After reload, connections:', connections.value.length)
   } catch (error: any) {
     statusMessage.value = {
       type: 'error',

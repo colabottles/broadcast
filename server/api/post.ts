@@ -22,8 +22,6 @@ async function compressImage(
     return new Uint8Array(imageBuffer)
   }
 
-  console.log(`Compressing image from ${currentSizeKB.toFixed(0)}KB to fit under ${maxSizeKB}KB`)
-
   // Convert ArrayBuffer to Buffer for sharp
   const buffer = Buffer.from(new Uint8Array(imageBuffer))
 
@@ -39,7 +37,6 @@ async function compressImage(
     const compressedSizeKB = compressed.byteLength / 1024
 
     if (compressedSizeKB <= maxSizeKB) {
-      console.log(`Compressed to ${compressedSizeKB.toFixed(0)}KB at quality ${quality}`)
       return new Uint8Array(compressed)
     }
 
@@ -58,7 +55,6 @@ async function compressImage(
     throw new Error(`Unable to compress image to under ${maxSizeKB}KB (got ${finalSizeKB.toFixed(0)}KB)`)
   }
 
-  console.log(`Resized and compressed to ${finalSizeKB.toFixed(0)}KB`)
   return new Uint8Array(resized)
 }
 interface PostResult {
@@ -177,7 +173,6 @@ export default defineEventHandler(async (event) => {
 
   // Post to each platform
   for (const connection of connections) {
-    console.log('Processing platform:', connection.platform)
     try {
       let result: PostResult
 
@@ -348,8 +343,6 @@ async function postToBluesky(connection: any, content: string, images?: any[], t
       postData
     )
 
-    console.log('Bluesky post created:', response.uri) // ADD THIS
-
     return {
       success: true,
       post_id: response.uri,
@@ -415,12 +408,6 @@ async function postToMastodon(connection: any, content: string, images?: any[], 
     if (mediaIds.length > 0) {
       postBody.media_ids = mediaIds
     }
-
-    console.log('Posting to Mastodon:', {
-      instance: connection.instance_url,
-      textLength: fullText.length,
-      mediaCount: mediaIds.length
-    })
 
     const response = await fetch(`${connection.instance_url}/api/v1/statuses`, {
       method: 'POST',
@@ -547,11 +534,6 @@ async function postToLinkedIn(connection: any, content: string, images?: any[], 
       // Add media to post
       postBody.specificContent['com.linkedin.ugc.ShareContent'].media = media
     }
-
-    console.log('Posting to LinkedIn:', {
-      textLength: fullText.length,
-      mediaCount: images?.length || 0
-    })
 
     // Create the post
     const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {

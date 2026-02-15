@@ -4,7 +4,7 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const supabase = createClient(config.public.supabase.url, config.supabaseServiceKey)
 
-  // Get user from middleware (same as Bluesky)
+  // Get user from middleware
   const user = event.context.user
   if (!user) {
     throw createError({
@@ -14,7 +14,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-
   if (!body.instance) {
     throw createError({
       statusCode: 400,
@@ -37,8 +36,6 @@ export default defineEventHandler(async (event) => {
       })
     })
 
-    console.log('Mastodon registration status:', registerResponse.status)
-
     if (!registerResponse.ok) {
       const errorText = await registerResponse.text()
       console.error('Mastodon registration error:', errorText)
@@ -46,7 +43,6 @@ export default defineEventHandler(async (event) => {
     }
 
     const appData = await registerResponse.json()
-    console.log('Mastodon app registered successfully')
 
     // Generate state for CSRF protection
     const state = crypto.randomUUID()
@@ -63,7 +59,7 @@ export default defineEventHandler(async (event) => {
     const authUrl = `${body.instance}/oauth/authorize?${params.toString()}`
 
     // Store state and app credentials for callback
-    await supabase
+    const { data: insertData, error: insertError } = await supabase
       .from('oauth_state')
       .insert({
         user_id: user.id,
@@ -72,8 +68,16 @@ export default defineEventHandler(async (event) => {
         instance_url: body.instance,
         client_id: appData.client_id,
         client_secret: appData.client_secret,
-        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
+        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
       })
+      .select()
+
+    if (insertError) {
+      console.error('Failed to save oauth_state:', insertError)
+      throw new Error(`Failed to save OAuth state: ${insertError.message}`)
+    }
+
+    console.log('OAuth state saved successfully:', insertData)
 
     return {
       authUrl: authUrl

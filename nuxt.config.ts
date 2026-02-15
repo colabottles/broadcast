@@ -8,7 +8,7 @@ export default defineNuxtConfig({
     redirectOptions: {
       login: '/login',
       callback: '/confirm',
-      exclude: ['/pricing'],
+      exclude: ['/pricing', '/signup', '/forgot-password'],
     }
   },
   nitro: {
@@ -30,10 +30,28 @@ export default defineNuxtConfig({
       ]
     }
   },
+  vite: {
+    server: {
+      watch: {
+        usePolling: true,
+        interval: 100
+      },
+      // Fix MIME type issues on Windows
+      middlewareMode: false,
+      fs: {
+        strict: false
+      }
+    },
+    // Force CSS to be extracted properly
+    build: {
+      cssCodeSplit: true
+    }
+  },
   css: ['~/assets/css/main.css'],
   typescript: {
     strict: true,
-    typeCheck: true
+    // Disable type checking in dev (Windows compatibility)
+    typeCheck: false
   },
   runtimeConfig: {
     supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,

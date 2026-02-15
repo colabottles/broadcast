@@ -112,7 +112,7 @@ export default defineEventHandler(async (event) => {
 
         processed++
       } catch (err) {
-        console.error(`Error processing post ${post.id}:`, err)
+        console.error('Error processing post', post.id, ':', err)
         failed++
       }
     }

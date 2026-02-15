@@ -11,20 +11,20 @@
 }
 
 :root {
-  /* Colors - WCAG AA compliant */
+  /* Colors - WCAG 2.2 AA compliant */
   --color-primary: #0066cc;
   --color-primary-hover: #0052a3;
-  --color-secondary: #6c757d;
+  --color-secondary: #5a6268;
   --color-success: #198754;
   --color-danger: #dc3545;
-  --color-warning: #ffc107;
+  --color-warning: #d97706;
   --color-info: #0dcaf0;
 
   --color-bg: #ffffff;
   --color-surface: #f8f9fa;
   --color-border: #dee2e6;
   --color-text: #212529;
-  --color-text-muted: #6c757d;
+  --color-text-muted: #5a6268;
 
   /* Focus styles */
   --focus-outline: 3px solid #0066cc;
@@ -41,8 +41,10 @@
   /* Typography */
   --font-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "Courier New", Courier, monospace;
+  --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
+  --font-size-md: 1rem;
   --font-size-lg: 1.125rem;
   --font-size-xl: 1.25rem;
   --font-size-2xl: 1.5rem;
@@ -58,35 +60,35 @@
   --transition-base: 250ms ease-in-out;
 }
 
-/* Dark Mode Colors - Inspired by Apple HIG and Material Design 3 */
+/* Dark Mode Colors - WCAG 2.2 AA Compliant */
 [data-theme="dark"] {
-  /* Primary - Brighter, more saturated for dark backgrounds */
-  --color-primary: #5eb3ff;
-  --color-primary-hover: #7fc4ff;
+  /* Primary - Bright for visibility */
+  --color-primary: #4da6ff;
+  --color-primary-hover: #6eb8ff;
 
-  /* Semantic colors - Carefully calibrated for dark mode */
-  --color-secondary: #a0a0a0;
+  /* Semantic colors */
+  --color-secondary: #a8a8a8;
   --color-success: #30d158;
   --color-danger: #ff453a;
   --color-warning: #ffd60a;
   --color-info: #64d2ff;
 
-  /* Neutrals - Rich, deep backgrounds with proper elevation */
+  /* Neutrals */
   --color-bg: #1c1c1e;
   --color-surface: #2c2c2e;
-  --color-border: #3a3a3c;
+  --color-border: #48484a;
   --color-text: #f5f5f7;
-  --color-text-muted: #aeaeb2;
+  --color-text-muted: #c7c7cc;
 
-  --focus-outline: 3px solid #5eb3ff;
+  --focus-outline: 3px solid #4da6ff;
 }
 
 /* Automatically apply dark mode based on system preference */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-primary: #5eb3ff;
-    --color-primary-hover: #7fc4ff;
-    --color-secondary: #a0a0a0;
+    --color-primary: #4da6ff;
+    --color-primary-hover: #6eb8ff;
+    --color-secondary: #a8a8a8;
     --color-success: #30d158;
     --color-danger: #ff453a;
     --color-warning: #ffd60a;
@@ -94,11 +96,15 @@
 
     --color-bg: #1c1c1e;
     --color-surface: #2c2c2e;
-    --color-border: #3a3a3c;
+    --color-border: #48484a;
     --color-text: #f5f5f7;
-    --color-text-muted: #aeaeb2;
+    --color-text-muted: #c7c7cc;
 
-    --focus-outline: 3px solid #5eb3ff;
+    --focus-outline: 3px solid #4da6ff;
+
+    .upgrade-cta .btn {
+      color: var(--color-bg);
+    }
   }
 }
 
@@ -171,19 +177,29 @@ p {
 /* ==================== */
 
 .skip-link {
-  position: absolute;
-  top: -40px;
-  left: 0;
   background: var(--color-primary);
   color: white;
+  height: 50px;
+  left: 1%;
   padding: var(--space-sm) var(--space-md);
-  text-decoration: none;
-  font-weight: 600;
-  z-index: 100;
+  position: absolute;
+  transform: translateY(-100%);
+  transition: transform 0.3s;
 }
 
 .skip-link:focus {
-  top: 0;
+  transform: translateY(15%);
+}
+
+/* Dark mode skip-link override */
+@media (prefers-color-scheme: dark) {
+  .skip-link {
+    background-color: #133598;
+  }
+}
+
+[data-theme="dark"] .skip-link {
+  background-color: #133598;
 }
 
 /* ==================== */
@@ -532,6 +548,30 @@ legend {
   flex-wrap: wrap;
   justify-content: center;
   margin-top: var(--space-lg);
+}
+
+/* Dark mode button overrides - specific background colors */
+@media (prefers-color-scheme: dark) {
+  .btn-primary {
+    background-color: #133598;
+    /* Dark enough for white text */
+    border-color: #133598;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: #3b9eff;
+    border-color: #3b9eff;
+  }
+}
+
+[data-theme="dark"] .btn-primary {
+  background-color: #133598;
+  border-color: #133598;
+}
+
+[data-theme="dark"] .btn-primary:hover:not(:disabled) {
+  background-color: #3b9eff;
+  border-color: #3b9eff;
 }
 
 /* ==================== */
