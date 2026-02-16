@@ -1,8 +1,27 @@
 <template>
   <div class="pricing-page">
     <section class="pricing-hero" aria-labelledby="pricing-heading">
-      <h2 id="pricing-heading">Choose Your Plan</h2>
+      <h1 id="pricing-heading">Choose Your Plan</h1>
       <p class="pricing-subtitle">Start broadcasting for free, upgrade as you grow</p>
+
+      <!-- Billing Toggle -->
+      <div class="billing-toggle">
+        <span :class="['billing-option', { active: billingPeriod === 'monthly' }]">
+          Monthly
+        </span>
+        <button
+          @click="toggleBilling"
+          class="toggle-switch-btn"
+          :aria-label="`Switch to ${billingPeriod === 'monthly' ? 'yearly' : 'monthly'} billing`"
+          role="switch"
+          :aria-checked="billingPeriod === 'yearly'">
+          <span class="toggle-slider"></span>
+        </button>
+        <span :class="['billing-option', { active: billingPeriod === 'yearly' }]">
+          Yearly
+          <span class="save-badge">Save 20%</span>
+        </span>
+      </div>
     </section>
 
     <section class="pricing-tiers" aria-label="Subscription plans">
@@ -10,14 +29,14 @@
 
         <!-- Starter Plan -->
         <article class="pricing-card" aria-labelledby="starter-heading">
-          <div class="pricing-card-header">
-            <h3 id="starter-heading">Starter</h3>
+          <header class="pricing-card-header">
+            <h2 id="starter-heading">Starter</h2>
             <div class="pricing-price">
               <span class="price-amount">$0</span>
               <span class="price-period">/month</span>
             </div>
             <p class="pricing-description">Perfect for trying out Broadcast</p>
-          </div>
+          </header>
 
           <ul class="pricing-features" role="list">
             <li>
@@ -30,7 +49,15 @@
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>Basic tag management</span>
+              <span>Basic image uploads</span>
+            </li>
+            <li>
+              <span class="feature-icon" aria-hidden="true">✓</span>
+              <span>Draft saving</span>
+            </li>
+            <li>
+              <span class="feature-icon" aria-hidden="true">✓</span>
+              <span>Tag management</span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
@@ -41,8 +68,7 @@
           <button
             class="btn btn-outline pricing-btn"
             aria-label="Start with Starter plan"
-            @click="handlePlanSelect('starter')"
-          >
+            @click="handlePlanSelect('starter')">
             Get Started Free
           </button>
         </article>
@@ -53,14 +79,18 @@
             Most Popular
           </div>
 
-          <div class="pricing-card-header">
-            <h3 id="creator-heading">Creator</h3>
+          <header class="pricing-card-header">
+            <h2 id="creator-heading">Creator</h2>
             <div class="pricing-price">
-              <span class="price-amount">$6</span>
-              <span class="price-period">/month</span>
+              <span class="price-amount">${{ creatorPrice }}</span>
+              <span class="price-period">/{{ billingPeriod === 'monthly' ? 'month' : 'year'
+                }}</span>
             </div>
+            <p v-if="billingPeriod === 'yearly'" class="pricing-savings">
+              ${{ creatorMonthlySavings }}/month
+            </p>
             <p class="pricing-description">Everything you need to create</p>
-          </div>
+          </header>
 
           <ul class="pricing-features" role="list">
             <li>
@@ -77,19 +107,15 @@
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span><strong>Image uploads with alt text</strong></span>
+              <span><strong>Unlimited image uploads</strong></span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>Advanced tag management</span>
+              <span>Draft saving</span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>Draft saving & templates</span>
-            </li>
-            <li>
-              <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>Post history & analytics</span>
+              <span>Post history</span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
@@ -101,28 +127,32 @@
             </li>
           </ul>
 
+          <p class="trial-note">{{ billingPeriod === 'monthly' ? 'Billed monthly' : 'Billed annually' }} • Cancel anytime</p>
+
           <button
             class="btn btn-primary pricing-btn"
             aria-label="Start with Creator plan"
-            @click="handlePlanSelect('creator', 'monthly')"
-            :disabled="loading"
-          >
+            @click="handlePlanSelect('creator', billingPeriod)"
+            :disabled="loading">
             <span v-if="loading" class="spinner" aria-hidden="true"></span>
-            {{ loading ? 'Loading...' : 'Start Free Trial' }}
+            {{ loading ? 'Loading...' : 'Upgrade to Creator' }}
           </button>
-          <p class="trial-note">14-day free trial, no credit card required</p>
         </article>
 
         <!-- Professional Plan -->
         <article class="pricing-card" aria-labelledby="professional-heading">
-          <div class="pricing-card-header">
-            <h3 id="professional-heading">Professional</h3>
+          <header class="pricing-card-header">
+            <h2 id="professional-heading">Professional</h2>
             <div class="pricing-price">
-              <span class="price-amount">$29</span>
-              <span class="price-period">/month</span>
+              <span class="price-amount">${{ professionalPrice }}</span>
+              <span class="price-period">/{{ billingPeriod === 'monthly' ? 'month' : 'year'
+                }}</span>
             </div>
+            <p v-if="billingPeriod === 'yearly'" class="pricing-savings">
+              ${{ professionalMonthlySavings }}/month
+            </p>
             <p class="pricing-description">For teams and businesses</p>
-          </div>
+          </header>
 
           <ul class="pricing-features" role="list">
             <li>
@@ -135,23 +165,19 @@
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span><strong>Advanced analytics & insights</strong></span>
+              <span><strong>Advanced analytics</strong></span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span><strong>Content calendar view</strong></span>
+              <span>Content calendar view</span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>Multiple accounts per platform</span>
+              <span>Team workflows</span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>Custom approval workflows</span>
-            </li>
-            <li>
-              <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>Branded reports</span>
+              <span>Performance reports</span>
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
@@ -159,26 +185,26 @@
             </li>
           </ul>
 
+          <p class="trial-note">{{ billingPeriod === 'monthly' ? 'Billed monthly' : 'Billed annually' }} • Cancel anytime</p>
+
           <button
             class="btn btn-outline pricing-btn"
             aria-label="Start with Professional plan"
-            @click="handlePlanSelect('professional', 'monthly')"
-            :disabled="loading"
-          >
-            {{ loading ? 'Loading...' : 'Start Free Trial' }}
+            @click="handlePlanSelect('professional', billingPeriod)"
+            :disabled="loading">
+            {{ loading ? 'Loading...' : 'Upgrade to Pro' }}
           </button>
-          <p class="trial-note">14-day free trial, no credit card required</p>
         </article>
 
         <!-- Enterprise Plan -->
         <article class="pricing-card" aria-labelledby="enterprise-heading">
-          <div class="pricing-card-header">
-            <h3 id="enterprise-heading">Enterprise</h3>
+          <header class="pricing-card-header">
+            <h2 id="enterprise-heading">Enterprise</h2>
             <div class="pricing-price">
               <span class="price-amount">Custom</span>
             </div>
             <p class="pricing-description">Tailored to your organization</p>
-          </div>
+          </header>
 
           <ul class="pricing-features" role="list">
             <li>
@@ -211,15 +237,14 @@
             </li>
             <li>
               <span class="feature-icon" aria-hidden="true">✓</span>
-              <span>Custom training & support</span>
+              <span>Custom training</span>
             </li>
           </ul>
 
           <button
             class="btn btn-outline pricing-btn"
             aria-label="Contact sales for Enterprise plan"
-            @click="handleContactSales"
-          >
+            @click="handleContactSales">
             Contact Sales
           </button>
         </article>
@@ -267,24 +292,24 @@
             </tr>
             <tr>
               <th scope="row">Image Uploads</th>
-              <td><span aria-label="Not included">–</span></td>
-              <td><span aria-label="Included">✓</span></td>
-              <td><span aria-label="Included">✓</span></td>
-              <td><span aria-label="Included">✓</span></td>
+              <td>Basic (up to 4)</td>
+              <td>Unlimited</td>
+              <td>Unlimited</td>
+              <td>Unlimited</td>
             </tr>
             <tr>
               <th scope="row">Draft Saving</th>
-              <td><span aria-label="Not included">–</span></td>
+              <td><span aria-label="Included">✓</span></td>
               <td><span aria-label="Included">✓</span></td>
               <td><span aria-label="Included">✓</span></td>
               <td><span aria-label="Included">✓</span></td>
             </tr>
             <tr>
-              <th scope="row">Post Analytics</th>
+              <th scope="row">Analytics</th>
               <td><span aria-label="Not included">–</span></td>
               <td>Basic</td>
               <td>Advanced</td>
-              <td>Advanced + Custom</td>
+              <td>Custom</td>
             </tr>
             <tr>
               <th scope="row">Team Members</th>
@@ -292,34 +317,6 @@
               <td>1</td>
               <td>5</td>
               <td>Unlimited</td>
-            </tr>
-            <tr>
-              <th scope="row">Content Calendar</th>
-              <td><span aria-label="Not included">–</span></td>
-              <td><span aria-label="Not included">–</span></td>
-              <td><span aria-label="Included">✓</span></td>
-              <td><span aria-label="Included">✓</span></td>
-            </tr>
-            <tr>
-              <th scope="row">Approval Workflows</th>
-              <td><span aria-label="Not included">–</span></td>
-              <td><span aria-label="Not included">–</span></td>
-              <td><span aria-label="Included">✓</span></td>
-              <td><span aria-label="Included">✓</span></td>
-            </tr>
-            <tr>
-              <th scope="row">Multiple Accounts</th>
-              <td><span aria-label="Not included">–</span></td>
-              <td><span aria-label="Not included">–</span></td>
-              <td><span aria-label="Included">✓</span></td>
-              <td><span aria-label="Included">✓</span></td>
-            </tr>
-            <tr>
-              <th scope="row">API Access</th>
-              <td><span aria-label="Not included">–</span></td>
-              <td><span aria-label="Not included">–</span></td>
-              <td><span aria-label="Not included">–</span></td>
-              <td><span aria-label="Included">✓</span></td>
             </tr>
             <tr>
               <th scope="row">Support</th>
@@ -343,7 +340,8 @@
             <h3>Can I change plans at any time?</h3>
           </dt>
           <dd>
-            Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate any charges or credits.
+            Yes! You can upgrade or downgrade your plan at any time. Changes take effect
+            immediately.
           </dd>
         </div>
 
@@ -352,16 +350,8 @@
             <h3>What payment methods do you accept?</h3>
           </dt>
           <dd>
-            We accept all major credit cards (Visa, Mastercard, American Express, Discover) through Stripe. For Enterprise plans, we can arrange wire transfers or invoicing.
-          </dd>
-        </div>
-
-        <div class="faq-item">
-          <dt>
-            <h3>Is there a free trial?</h3>
-          </dt>
-          <dd>
-            Yes! Creator and Professional plans come with a 14-day free trial. No credit card required. The Starter plan is free forever.
+            We accept all major credit cards (Visa, Mastercard, American Express, Discover) through
+            Stripe. For Enterprise plans, we can arrange wire transfers or invoicing.
           </dd>
         </div>
 
@@ -370,7 +360,9 @@
             <h3>What happens if I exceed my post limit?</h3>
           </dt>
           <dd>
-            On the Starter plan, you'll be prompted to upgrade when you reach 25 posts. We'll never charge you without permission. You can also wait until the next billing cycle when your limit resets.
+            On the Starter plan, you'll be prompted to upgrade when you reach 25 posts. We'll never
+            charge you without permission. You can also wait until the next month when your limit
+            resets.
           </dd>
         </div>
 
@@ -379,7 +371,8 @@
             <h3>Do you offer annual billing?</h3>
           </dt>
           <dd>
-            Yes! Annual billing saves you 20%. Creator is $58/year (save $14) and Professional is $278/year (save $70).
+            Yes! Annual billing saves you 20%. Creator is $58/year (save $14) and Professional is
+            $278/year (save $70).
           </dd>
         </div>
 
@@ -397,7 +390,8 @@
             <h3>Can I cancel anytime?</h3>
           </dt>
           <dd>
-            Absolutely! You can cancel your subscription at any time. You'll continue to have access until the end of your billing period.
+            Absolutely! You can cancel your subscription at any time. You'll continue to have access
+            until the end of your billing period.
           </dd>
         </div>
       </dl>
@@ -408,8 +402,8 @@
       <h2 id="cta-heading">Ready to start broadcasting?</h2>
       <p>Join content creators broadcasting their message across multiple platforms.</p>
       <div class="btn-group">
-        <NuxtLink to="/signup" class="btn btn-primary">Start Free Trial</NuxtLink>
-        <NuxtLink to="/" class="btn btn-outline">Learn More</NuxtLink>
+        <NuxtLink to="/signup" class="btn btn-primary">Get Started Free</NuxtLink>
+        <button @click="handleContactSales" class="btn btn-outline">Contact Sales</button>
       </div>
     </section>
 
@@ -424,6 +418,31 @@ const loading = ref(false)
 type Plan = 'starter' | 'creator' | 'professional' | 'enterprise'
 type Billing = 'monthly' | 'yearly'
 
+// Billing period state
+const billingPeriod = ref<Billing>('monthly')
+
+// Pricing calculations
+const creatorPrice = computed(() => {
+  return billingPeriod.value === 'monthly' ? 6 : 58
+})
+
+const professionalPrice = computed(() => {
+  return billingPeriod.value === 'monthly' ? 29 : 278
+})
+
+const creatorMonthlySavings = computed(() => {
+  return billingPeriod.value === 'yearly' ? '4.83' : '6'
+})
+
+const professionalMonthlySavings = computed(() => {
+  return billingPeriod.value === 'yearly' ? '23.17' : '29'
+})
+
+// Toggle billing period
+const toggleBilling = () => {
+  billingPeriod.value = billingPeriod.value === 'monthly' ? 'yearly' : 'monthly'
+}
+
 // Handle plan selection
 const handlePlanSelect = async (plan: Plan, billing?: Billing) => {
   // Starter is free, just need to sign up
@@ -431,7 +450,7 @@ const handlePlanSelect = async (plan: Plan, billing?: Billing) => {
     if (!user.value) {
       router.push('/signup')
     } else {
-      router.push('/dashboard')
+      router.push('/')
     }
     return
   }
@@ -440,7 +459,7 @@ const handlePlanSelect = async (plan: Plan, billing?: Billing) => {
   if (!user.value) {
     // Store intended plan in session storage
     if (process.client) {
-      sessionStorage.setItem('intended_plan', JSON.stringify({ plan, billing }))
+      sessionStorage.setItem('intended_plan', JSON.stringify({ plan, billing: billing || billingPeriod.value }))
     }
     router.push('/login')
     return
@@ -453,7 +472,7 @@ const handlePlanSelect = async (plan: Plan, billing?: Billing) => {
       method: 'POST',
       body: {
         plan,
-        billing: billing || 'monthly'
+        billing: billing || billingPeriod.value
       }
     })
 
@@ -471,7 +490,6 @@ const handlePlanSelect = async (plan: Plan, billing?: Billing) => {
 
 // Handle contact sales
 const handleContactSales = () => {
-  // In production, this would open a contact form or send to a sales page
   window.location.href = 'mailto:todd@toddl.dev?subject=Enterprise Inquiry'
 }
 
@@ -482,6 +500,7 @@ onMounted(() => {
     if (intendedPlan) {
       const { plan, billing } = JSON.parse(intendedPlan)
       sessionStorage.removeItem('intended_plan')
+      billingPeriod.value = billing
       handlePlanSelect(plan, billing)
     }
   }
@@ -491,7 +510,7 @@ onMounted(() => {
 useHead({
   title: 'Pricing - Broadcast',
   meta: [
-    { name: 'description', content: 'Choose the perfect Broadcast plan for your needs. Start free and upgrade as you grow.' }
+    { name: 'description', content: 'Choose the perfect Broadcast plan for your needs. Start free and upgrade as you grow. Save 20% with annual billing.' }
   ]
 })
 </script>
@@ -509,6 +528,82 @@ useHead({
   margin-top: var(--space-sm);
 }
 
+/* Billing Toggle */
+.billing-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+}
+
+.billing-option {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  transition: color var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.billing-option.active {
+  color: var(--color-text);
+}
+
+.save-badge {
+  display: inline-block;
+  background-color: var(--color-success);
+  color: white;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.toggle-switch-btn {
+  position: relative;
+  width: 3.5rem;
+  height: 2rem;
+  background-color: var(--color-border);
+  border: none;
+  border-radius: 2rem;
+  cursor: pointer;
+  transition: background-color var(--transition-base);
+}
+
+.toggle-switch-btn[aria-checked="true"] {
+  background-color: var(--color-primary);
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform var(--transition-base);
+}
+
+.toggle-switch-btn[aria-checked="true"] .toggle-slider {
+  transform: translateX(1.5rem);
+}
+
+.toggle-switch-btn:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+
+/* Pricing Savings Text */
+.pricing-savings {
+  font-size: var(--font-size-sm);
+  color: var(--color-success);
+  font-weight: 600;
+  margin: var(--space-xs) 0 0 0;
+}
+
 /* Pricing Grid */
 .pricing-tiers {
   margin-block: var(--space-2xl);
@@ -516,8 +611,8 @@ useHead({
 
 .pricing-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--space-xl);
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-lg);
   max-width: 1400px;
   margin-inline: auto;
 }
@@ -527,11 +622,12 @@ useHead({
   background-color: var(--color-surface);
   border: 2px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: var(--space-xl);
+  padding: var(--space-lg);
   display: flex;
   flex-direction: column;
   position: relative;
   transition: all var(--transition-base);
+  min-width: 0;
 }
 
 .pricing-card:hover {
@@ -551,77 +647,85 @@ useHead({
   transform: translateX(-50%);
   background-color: var(--color-primary);
   color: white;
-  padding: var(--space-xs) var(--space-md);
+  padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .pricing-card-header {
   text-align: center;
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-md);
 }
 
-.pricing-card-header h3 {
-  font-size: var(--font-size-2xl);
+.pricing-card-header h2 {
+  font-size: var(--font-size-xl);
   margin-bottom: var(--space-sm);
 }
 
 .pricing-price {
-  margin-block: var(--space-md);
+  margin-block: var(--space-sm);
 }
 
 .price-amount {
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: 700;
   color: var(--color-primary);
+  line-height: 1;
 }
 
 .price-period {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   color: var(--color-text-muted);
 }
 
 .pricing-description {
   color: var(--color-text-muted);
   margin: 0;
+  font-size: var(--font-size-sm);
 }
 
 /* Features List */
 .pricing-features {
   list-style: none;
   flex: 1;
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-md);
 }
 
 .pricing-features li {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-sm);
-  padding-block: var(--space-sm);
+  gap: var(--space-xs);
+  padding-block: var(--space-xs);
+  font-size: var(--font-size-sm);
 }
 
 .feature-icon {
   color: var(--color-success);
   font-weight: 700;
   flex-shrink: 0;
+  font-size: var(--font-size-sm);
 }
 
 .pricing-btn {
   width: 100%;
+  font-size: var(--font-size-sm);
+  padding: var(--space-sm) var(--space-md);
 }
 
 .trial-note {
   text-align: center;
   font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  font-weight: 600;
+  color: var(--color-info );
   margin-top: var(--space-sm);
 }
 
 /* Comparison Table */
 .comparison-section {
-  margin-block: var(--space-2xl) * 2;
-  padding-block: var(--space-2xl);
+  margin-block: var(--space-2xl);
+  padding-block: var(--space-xl);
   background-color: var(--color-surface);
   border-radius: var(--radius-lg);
   padding-inline: var(--space-xl);
@@ -634,12 +738,32 @@ useHead({
 
 .table-wrapper {
   overflow-x: auto;
+  max-width: 1400px;
+  margin-inline: auto;
 }
 
 .comparison-table {
   width: 100%;
   border-collapse: collapse;
+  text-align: center;
+  table-layout: fixed;
+}
+
+.comparison-table th:first-child,
+.comparison-table td:first-child {
+  width: 25%;
   text-align: left;
+}
+
+.comparison-table th:nth-child(2),
+.comparison-table td:nth-child(2),
+.comparison-table th:nth-child(3),
+.comparison-table td:nth-child(3),
+.comparison-table th:nth-child(4),
+.comparison-table td:nth-child(4),
+.comparison-table th:nth-child(5),
+.comparison-table td:nth-child(5) {
+  width: 18.75%;
 }
 
 .comparison-table th,
@@ -653,14 +777,17 @@ useHead({
   font-weight: 600;
   position: sticky;
   top: 0;
+  font-size: var(--font-size-base);
 }
 
 .comparison-table tbody th {
   font-weight: 600;
+  font-size: var(--font-size-sm);
 }
 
 .comparison-table td {
   text-align: center;
+  font-size: var(--font-size-sm);
 }
 
 .comparison-table tbody tr:hover {
@@ -669,12 +796,11 @@ useHead({
 
 /* FAQ Section */
 .faq-section {
-  margin-block: var(--space-2xl) * 2;
+  margin-block: var(--space-2xl);
 }
 
 .faq-section h2 {
   text-align: center;
-  margin-top: var(--space-xl);
   margin-bottom: var(--space-xl);
 }
 
@@ -724,18 +850,44 @@ useHead({
 }
 
 /* Responsive */
+@media (max-width: 1200px) {
+  .pricing-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .comparison-table th:first-child,
+  .comparison-table td:first-child {
+    width: 30%;
+  }
+
+  .comparison-table th:nth-child(n+2),
+  .comparison-table td:nth-child(n+2) {
+    width: 17.5%;
+  }
+}
+
 @media (max-width: 768px) {
   .pricing-grid {
     grid-template-columns: 1fr;
   }
 
   .comparison-table {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-xs);
   }
 
   .comparison-table th,
   .comparison-table td {
     padding: var(--space-sm);
+  }
+
+  .comparison-table th:first-child,
+  .comparison-table td:first-child {
+    width: 40%;
+  }
+
+  .comparison-table th:nth-child(n+2),
+  .comparison-table td:nth-child(n+2) {
+    width: 15%;
   }
 }
 </style>

@@ -1,267 +1,310 @@
 <template>
   <div class="post-composer">
     <h2>Create New Post</h2>
+    <form @submit.prevent="handleSubmit" novalidate>
+      <!-- Post Content -->
+      <div class="form-group">
+        <label for="post-content" class="label-required">Post Content</label>
+        <textarea
+          id="post-content"
+          v-model="postContent"
+          placeholder="What's on your mind?"
+          required
+          aria-required="true"
+          aria-describedby="char-count content-help"></textarea>
+        <div
+          id="char-count"
+          :class="['char-counter', charCountClass]"
+          role="status"
+          aria-live="polite">
+          <span>{{ charCount }} characters</span>
+          <span v-if="selectedPlatforms.length > 0">
+            Longest limit: {{ maxCharLimit }}
+          </span>
+        </div>
+        <div v-if="charWarning" class="char-warning" role="alert">
+          ⚠️ {{ charWarning }}
+        </div>
+        <p id="content-help" class="sr-only">
+          Enter the content you want to post across your selected social media platforms
+        </p>
+      </div>
 
-        <!-- Status Messages -->
-        <div v-if="statusMessage" :class="['alert', `alert-${statusMessage.type}`]" role="alert">
-          {{ statusMessage.text }}
+      <!-- Platform Selection -->
+      <div class="form-group">
+        <fieldset class="socials">
+          <legend id="platforms-label" class="label-required">
+            Select Platforms
+          </legend>
+          <div class="platforms-grid" role="group" aria-labelledby="platforms-label">
+            <button
+              v-for="platform in availablePlatforms"
+              :key="platform.id"
+              type="button"
+              class="platform-button"
+              :class="{ 'platform-selected': selectedPlatforms.includes(platform.id) }"
+              @click="togglePlatform(platform.id)"
+              :aria-pressed="selectedPlatforms.includes(platform.id)">
+              <span class="platform-icon" v-html="platform.icon"></span>
+              <span class="platform-name">{{ platform.name }}</span>
+              <span v-if="selectedPlatforms.includes(platform.id)" class="platform-check">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <path
+                    d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" />
+                </svg>
+              </span>
+            </button>
+          </div>
+        </fieldset>
+        <p v-if="formSubmitted && selectedPlatforms.length === 0" class="alert alert-error"
+          role="alert">
+          Please select at least one platform
+        </p>
+      </div>
+
+      <!-- Tags Input -->
+      <div class="form-group">
+        <label for="tag-input">Tags (optional)</label>
+        <div class="tags-input-wrapper">
+          <div class="tags-container" @click="focusTagInput">
+            <span
+              v-for="(tag, index) in tags"
+              :key="index"
+              class="tag"
+              role="listitem">
+              {{ tag }}
+              <button
+                type="button"
+                class="tag-remove"
+                @click="removeTag(index)"
+                :aria-label="`Remove tag ${tag}`">
+                ✕
+              </button>
+            </span>
+            <input
+              id="tag-input"
+              ref="tagInputRef"
+              v-model="currentTag"
+              type="text"
+              class="tag-input"
+              placeholder="Add tags..."
+              @keydown.enter.prevent="addTag"
+              @keydown.comma.prevent="addTag"
+              @keydown.space.prevent="addTag"
+              aria-describedby="tag-help" />
+          </div>
+          <p id="tag-help" class="sr-only">
+            Press Enter, Space, or Comma to add a tag. Tags will be formatted according to each
+            platform's requirements.
+          </p>
+          <p style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--color-text-muted);">
+            Press Enter, Space, or Comma to add tags
+          </p>
+        </div>
+      </div>
+
+      <!-- Image Upload -->
+      <div class="form-group">
+        <label for="image-upload">Images (optional)</label>
+        <input
+          id="image-upload"
+          ref="imageInputRef"
+          type="file"
+          accept="image/*"
+          multiple
+          @change="handleImageUpload"
+          style="display: none;" />
+        <button
+          type="button"
+          class="btn btn-outline"
+          @click="triggerImageUpload"
+          :disabled="images.length >= 4">
+          📷 Add Images ({{ images.length }}/4)
+        </button>
+        <p style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--color-text-muted);">
+          Maximum 4 images. Alt text is required for accessibility.
+        </p>
+
+        <!-- Image Previews -->
+        <div v-if="images.length > 0" class="image-previews">
+          <div
+            v-for="(image, index) in images"
+            :key="index"
+            class="image-preview-item">
+            <img :src="image.preview" :alt="image.alt_text || 'Image preview'"
+              class="preview-image" />
+            <div class="image-details">
+              <label :for="`alt-text-${index}`" class="label-required">
+                Alt Text (Required)
+              </label>
+              <input
+                :id="`alt-text-${index}`"
+                v-model="image.alt_text"
+                type="text"
+                placeholder="Describe this image for accessibility"
+                required
+                @input="validateImages"
+                :aria-invalid="formSubmitted && !image.alt_text ? 'true' : 'false'" />
+              <button
+                type="button"
+                class="btn btn-outline btn-sm"
+                @click="removeImage(index)">
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+        <p v-if="formSubmitted && hasImagesWithoutAltText" class="alert alert-error"
+          role="alert">
+          All images must have alt text for accessibility
+        </p>
+      </div>
+
+      <!-- Post Scheduling (Creator+ plans only) -->
+      <div v-if="canSchedulePosts" class="form-group">
+        <div class="scheduling-header">
+          <label for="schedule-toggle">Schedule Post</label>
+          <label class="toggle-switch">
+            <input
+              id="schedule-toggle"
+              v-model="schedulePost"
+              type="checkbox" />
+            <span class="toggle-slider"></span>
+          </label>
         </div>
 
-        <form @submit.prevent="handleSubmit" novalidate>
-          <!-- Post Content -->
+        <div v-if="schedulePost" class="scheduling-controls">
           <div class="form-group">
-            <label for="post-content" class="label-required">Post Content</label>
-            <textarea
-              id="post-content"
-              v-model="postContent"
-              @input="updateCharCount"
-              placeholder="What's on your mind?"
-              required
-              aria-required="true"
-              aria-describedby="char-count content-help"></textarea>
-            <div
-              id="char-count"
-              :class="['char-counter', charCountClass]"
-              role="status"
-              aria-live="polite">
-              <span>{{ charCount }} characters</span>
-              <span v-if="selectedPlatforms.length > 0">
-                Longest limit: {{ maxCharLimit }}
-              </span>
-            </div>
-            <div v-if="charWarning" class="char-warning" role="alert">
-              ⚠️ {{ charWarning }}
-            </div>
-            <p id="content-help" class="sr-only">
-              Enter the content you want to post across your selected social media platforms
-            </p>
-          </div>
-
-          <!-- Platform Selection -->
-          <div class="form-group">
-            <fieldset class="socials">
-              <legend id="platforms-label" class="label-required">
-                Select Platforms
-              </legend>
-              <div class="platforms-grid" role="group" aria-labelledby="platforms-label">
-                <button
-                  v-for="platform in availablePlatforms"
-                  :key="platform.id"
-                  type="button"
-                  class="platform-button"
-                  :class="{ 'platform-selected': selectedPlatforms.includes(platform.id) }"
-                  @click="togglePlatform(platform.id)"
-                  :aria-pressed="selectedPlatforms.includes(platform.id)">
-                  <span class="platform-icon" v-html="platform.icon"></span>
-                  <span class="platform-name">{{ platform.name }}</span>
-                  <span v-if="selectedPlatforms.includes(platform.id)" class="platform-check">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                      <path
-                        d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" />
-                    </svg>
-                  </span>
-                </button>
-              </div>
-            </fieldset>
-            <p v-if="formSubmitted && selectedPlatforms.length === 0" class="alert alert-error"
-              role="alert">
-              Please select at least one platform
-            </p>
-          </div>
-
-          <!-- Tags Input -->
-          <div class="form-group">
-            <label for="tag-input">Tags (optional)</label>
-            <div class="tags-input-wrapper">
-              <div class="tags-container" @click="focusTagInput">
-                <span
-                  v-for="(tag, index) in tags"
-                  :key="index"
-                  class="tag"
-                  role="listitem">
-                  {{ tag }}
-                  <button
-                    type="button"
-                    class="tag-remove"
-                    @click="removeTag(index)"
-                    :aria-label="`Remove tag ${tag}`">
-                    ✕
-                  </button>
-                </span>
-                <input
-                  id="tag-input"
-                  ref="tagInputRef"
-                  v-model="currentTag"
-                  type="text"
-                  class="tag-input"
-                  placeholder="Add tags..."
-                  @keydown.enter.prevent="addTag"
-                  @keydown.comma.prevent="addTag"
-                  @keydown.space.prevent="addTag"
-                  aria-describedby="tag-help" />
-              </div>
-              <p id="tag-help" class="sr-only">
-                Press Enter, Space, or Comma to add a tag. Tags will be formatted according to each
-                platform's requirements.
-              </p>
-              <p style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--color-text-muted);">
-                Press Enter, Space, or Comma to add tags
-              </p>
-            </div>
-          </div>
-
-          <!-- Image Upload -->
-          <div class="form-group">
-            <label for="image-upload">Images (optional)</label>
+            <label for="schedule-date" class="label-required">Date & Time</label>
             <input
-              id="image-upload"
-              ref="imageInputRef"
-              type="file"
-              accept="image/*"
-              multiple
-              @change="handleImageUpload"
-              style="display: none;" />
-            <button
-              type="button"
-              class="btn btn-outline"
-              @click="triggerImageUpload"
-              :disabled="images.length >= 4">
-              📷 Add Images ({{ images.length }}/4)
-            </button>
+              id="schedule-date"
+              v-model="scheduledDateTime"
+              type="datetime-local"
+              :min="minScheduleDateTime"
+              required
+              aria-required="true" />
             <p style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--color-text-muted);">
-              Maximum 4 images. Alt text is required for accessibility.
-            </p>
-
-            <!-- Image Previews -->
-            <div v-if="images.length > 0" class="image-previews">
-              <div
-                v-for="(image, index) in images"
-                :key="index"
-                class="image-preview-item">
-                <img :src="image.preview" :alt="image.alt_text || 'Image preview'"
-                  class="preview-image" />
-                <div class="image-details">
-                  <label :for="`alt-text-${index}`" class="label-required">
-                    Alt Text (Required)
-                  </label>
-                  <input
-                    :id="`alt-text-${index}`"
-                    v-model="image.alt_text"
-                    type="text"
-                    placeholder="Describe this image for accessibility"
-                    required
-                    @input="validateImages"
-                    :aria-invalid="formSubmitted && !image.alt_text ? 'true' : 'false'" />
-                  <button
-                    type="button"
-                    class="btn btn-outline btn-sm"
-                    @click="removeImage(index)">
-                    Remove
-                  </button>
-                </div>
-              </div>
-            </div>
-            <p v-if="formSubmitted && hasImagesWithoutAltText" class="alert alert-error"
-              role="alert">
-              All images must have alt text for accessibility
+              Your timezone: {{ userTimezone }}
             </p>
           </div>
-
-          <!-- Post Scheduling (Creator+ plans only) -->
-          <div v-if="canSchedulePosts" class="form-group">
-            <div class="scheduling-header">
-              <label for="schedule-toggle">Schedule Post</label>
-              <label class="toggle-switch">
-                <input
-                  id="schedule-toggle"
-                  v-model="schedulePost"
-                  type="checkbox" />
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-
-            <div v-if="schedulePost" class="scheduling-controls">
-              <div class="form-group">
-                <label for="schedule-date" class="label-required">Date & Time</label>
-                <input
-                  id="schedule-date"
-                  v-model="scheduledDateTime"
-                  type="datetime-local"
-                  :min="minScheduleDateTime"
-                  required
-                  aria-required="true" />
-                <p style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--color-text-muted);">
-                  Your timezone: {{ userTimezone }}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div v-else-if="selectedPlatforms.length > 0" class="upgrade-notice">
-            <p>
-              📅 <strong>Want to schedule posts? </strong>
-              <NuxtLink to="/pricing">Upgrade to Creator</NuxtLink> to schedule posts for later.
-            </p>
-          </div>
-
-          <!-- Preview Section -->
-          <section
-            v-if="selectedPlatforms.length > 0"
-            class="preview-card"
-            aria-labelledby="preview-heading">
-            <h3 id="preview-heading">Platform Previews</h3>
-            <div
-              v-for="platformId in selectedPlatforms"
-              :key="platformId"
-              style="margin-bottom: 1.5rem;">
-              <h4>{{ getPlatformById(platformId)?.name }}</h4>
-              <div class="preview-content" role="region"
-                :aria-label="`Preview for ${getPlatformById(platformId)?.name}`">
-                {{ formatPostForPlatform(platformId) }}
-              </div>
-            </div>
-          </section>
-
-          <!-- Action Buttons -->
-          <div class="btn-group">
-            <button
-              type="submit"
-              class="btn btn-primary"
-              :disabled="isSubmitting"
-              :aria-busy="isSubmitting || charCount > 300">
-              <span v-if="isSubmitting" class="spinner" aria-hidden="true"></span>
-              {{ isSubmitting ? 'Posting...' : 'Post to Platforms' }}
-            </button>
-
-            <button
-              type="button"
-              class="btn btn-secondary"
-              @click="saveDraft"
-              :disabled="isSubmitting">
-              Save Draft
-            </button>
-
-            <button
-              type="button"
-              class="btn btn-outline"
-              @click="clearForm"
-              :disabled="isSubmitting">
-              Clear
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
-    </template>
+      <div v-else-if="selectedPlatforms.length > 0" class="upgrade-notice">
+        <p>
+          📅 <strong>Want to schedule posts? </strong>
+          <NuxtLink to="/pricing">Upgrade to Creator</NuxtLink> to schedule posts for later.
+        </p>
+      </div>
 
-    <script setup lang="ts">
+      <!-- Preview Section -->
+      <section
+        v-if="selectedPlatforms.length > 0"
+        class="preview-card"
+        aria-labelledby="preview-heading">
+        <h3 id="preview-heading">Platform Previews</h3>
+        <div
+          v-for="platformId in selectedPlatforms"
+          :key="platformId"
+          style="margin-bottom: 1.5rem;">
+          <h4>{{ getPlatformById(platformId)?.name }}</h4>
+          <div class="preview-content" role="region"
+            :aria-label="`Preview for ${getPlatformById(platformId)?.name}`">
+            {{ formatPostForPlatform(platformId) }}
+          </div>
+        </div>
+      </section>
+
+      <!-- Status Messages -->
+      <div v-if="statusMessage" :class="['alert', `alert-${statusMessage.type}`]" role="alert">
+        {{ statusMessage.text }}
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="btn-group">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          :disabled="isSubmitting"
+          :aria-busy="isSubmitting || charCount > 300">
+          <span v-if="isSubmitting" class="spinner" aria-hidden="true"></span>
+          {{ isSubmitting ? 'Posting...' : 'Post to Platforms' }}
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-secondary"
+          @click="saveDraft"
+          :disabled="isSubmitting">
+          Save Draft
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-outline"
+          @click="clearForm"
+          :disabled="isSubmitting">
+          Clear
+        </button>
+      </div>
+    </form>
+  </div>
+</template>
+
+<script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
 
 const user = useSupabaseUser()
 const router = useRouter()
 const supabase = useSupabaseClient()
+const draftId = ref<string | null>(null)
 
 // Load user profile for subscription check
 const userProfile = ref<any>(null)
 onMounted(async () => {
+  // Load draft from sessionStorage (coming from drafts page)
+  const loadDraftData = sessionStorage.getItem('loadDraft')
+
+  if (loadDraftData) {
+    try {
+      const draft = JSON.parse(loadDraftData)
+
+      // Store the draft ID so we update instead of creating new
+      draftId.value = draft.id
+
+      postContent.value = draft.content || ''
+      selectedPlatforms.value = draft.platforms || []
+      tags.value = draft.tags || []
+
+      if (draft.scheduled_for) {
+        schedulePost.value = true
+        scheduledDateTime.value = new Date(draft.scheduled_for).toISOString().slice(0, 16)
+      }
+
+      sessionStorage.removeItem('loadDraft')
+
+      // Show persistent message about images if draft had images
+      const hasImages = draft.images && draft.images.length > 0
+      if (hasImages) {
+        statusMessage.value = {
+          type: 'info',
+          text: `Draft loaded. Please re-add ${draft.images.length} image(s) before posting.`
+        }
+        // Don't auto-dismiss - will be cleared when images are added
+      } else {
+        statusMessage.value = {
+          type: 'info',
+          text: 'Draft loaded successfully'
+        }
+        setTimeout(() => {
+          statusMessage.value = null
+        }, 3000)
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error)
+    }
+  }
+
+  // Load user profile for subscription check
   if (user.value) {
     const { data } = await supabase
       .from('profiles')
@@ -416,8 +459,17 @@ const maxCharLimit = computed(() => {
 })
 
 // Methods
-const updateCharCount = () => {
-  // This is called on input to trigger reactivity
+const clearForm = () => {
+  postContent.value = ''
+  selectedPlatforms.value = []
+  tags.value = []
+  currentTag.value = ''
+  images.value = []
+  schedulePost.value = false
+  scheduledDateTime.value = ''
+  formSubmitted.value = false
+  statusMessage.value = null
+  draftId.value = null  // Clear draft ID
 }
 
 const getPlatformById = (id: string) => {
@@ -507,6 +559,11 @@ const handleImageUpload = (event: Event) => {
         preview: e.target?.result as string,
         alt_text: ''
       })
+
+      // Clear the persistent image warning message if it's showing
+      if (statusMessage.value?.type === 'info' && statusMessage.value?.text.includes('re-add')) {
+        statusMessage.value = null
+      }
     }
     reader.readAsDataURL(file)
   })
@@ -632,17 +689,17 @@ const handleSubmit = async () => {
     // Check results
     const successPlatforms = response.results
       ? Object.entries(response.results)
-          .filter(([_, result]) => (result as PostResult).success)
-          .map(([platform]) => platform)
+        .filter(([_, result]) => (result as PostResult).success)
+        .map(([platform]) => platform)
       : []
 
     const failedPlatforms = response.results
       ? Object.entries(response.results)
-          .filter(([_, result]) => !(result as PostResult).success)
-          .map(([platform, result]) => ({
-            platform,
-            error: (result as PostResult).message || 'Unknown error'
-          }))
+        .filter(([_, result]) => !(result as PostResult).success)
+        .map(([platform, result]) => ({
+          platform,
+          error: (result as PostResult).message || 'Unknown error'
+        }))
       : []
 
     if (successPlatforms.length > 0) {
@@ -703,66 +760,71 @@ const handleSubmit = async () => {
   }
 }
 
-const saveDraft = () => {
-  const draft = {
-    content: postContent.value,
-    platforms: selectedPlatforms.value,
-    tags: tags.value,
-    timestamp: new Date().toISOString()
+const saveDraft = async () => {
+  if (!postContent.value.trim()) {
+    statusMessage.value = {
+      type: 'error',
+      text: 'Cannot save empty draft'
+    }
+    return
   }
 
-  // Save to localStorage
-  localStorage.setItem('broadcastDraft', JSON.stringify(draft))
+  try {
+    // Prepare images data (only save metadata, not file objects)
+    const imageData = images.value.map(img => ({
+      url: img.uploaded_url || img.preview,
+      alt_text: img.alt_text,
+      file_name: img.file ? img.file.name : ''
+    }))
 
-  statusMessage.value = {
-    type: 'success',
-    text: 'Draft saved successfully!'
-  }
+    const draftData = {
+      user_id: user.value!.id,
+      content: postContent.value,
+      platforms: selectedPlatforms.value,
+      tags: tags.value,
+      images: imageData,
+      scheduled_for: schedulePost.value && scheduledDateTime.value
+        ? new Date(scheduledDateTime.value).toISOString()
+        : null
+    }
 
-  setTimeout(() => {
-    statusMessage.value = null
-  }, 3000)
-}
+    // If we have a draftId, update existing draft. Otherwise create new one.
+    if (draftId.value) {
+      const { error } = await (supabase as any)
+        .from('drafts')
+        .update(draftData)
+        .eq('id', draftId.value)
 
-const clearForm = () => {
-  postContent.value = ''
-  selectedPlatforms.value = []
-  tags.value = []
-  currentTag.value = ''
-  images.value = []
-  schedulePost.value = false
-  scheduledDateTime.value = ''
-  formSubmitted.value = false
-  statusMessage.value = null
-}
+      if (error) throw error
+    } else {
+      const { data, error } = await (supabase as any)
+        .from('drafts')
+        .insert(draftData)
+        .select()
+        .single()
 
-// Load draft on mount
-onMounted(() => {
-  const savedDraft = localStorage.getItem('broadcastDraft')
-  if (savedDraft) {
-    try {
-      const draft = JSON.parse(savedDraft)
-
-      // Ask user if they want to restore
-      if (confirm('You have a saved draft. Would you like to restore it?')) {
-        postContent.value = draft.content || ''
-        selectedPlatforms.value = draft.platforms || []
-        tags.value = draft.tags || []
-
-        statusMessage.value = {
-          type: 'info',
-          text: 'Draft restored'
-        }
-
-        setTimeout(() => {
-          statusMessage.value = null
-        }, 3000)
+      if (error) throw error
+      if (data) {
+        draftId.value = data.id
       }
-    } catch (error) {
-      console.error('Error loading draft:', error)
+    }
+
+    statusMessage.value = {
+      type: 'success',
+      text: draftId.value ? 'Draft updated successfully!' : 'Draft saved successfully!'
+    }
+
+    setTimeout(() => {
+      statusMessage.value = null
+    }, 3000)
+
+  } catch (error: any) {
+    statusMessage.value = {
+      type: 'error',
+      text: error.message || 'Failed to save draft'
     }
   }
-})
+}
 
 // SEO
 useHead({
@@ -773,23 +835,23 @@ useHead({
 })
 </script>
 
-    <style scoped>
-      .char-counter-warning {
-        color: var(--color-warning, #f59e0b);
-      }
+<style scoped>
+.char-counter-warning {
+  color: var(--color-warning, #f59e0b);
+}
 
-      .char-counter-error {
-        color: var(--color-error, #ef4444);
-        font-weight: bold;
-      }
+.char-counter-error {
+  color: var(--color-error, #ef4444);
+  font-weight: bold;
+}
 
-      .char-warning {
-        margin-top: 0.5rem;
-        padding: 0.75rem;
-        background-color: #fef3c7;
-        border: 1px solid #f59e0b;
-        border-radius: 4px;
-        color: #92400e;
-        font-size: 0.875rem;
-      }
-    </style>
+.char-warning {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 4px;
+  color: #92400e;
+  font-size: 0.875rem;
+}
+</style>
