@@ -12,7 +12,12 @@ export default defineNuxtConfig({
     }
   },
   nitro: {
-    preset: 'netlify'
+    preset: 'netlify',
+    output: {
+      dir: '.netlify',
+      serverDir: '.netlify/functions-internal',
+      publicDir: 'dist'
+    }
   },
   app: {
     head: {
