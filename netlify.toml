@@ -4,12 +4,13 @@
 
 [build]
   command = "npm run build"
+  # No publish line - let Nuxt/Netlify handle it automatically
+
+[functions]
+  node_bundler = "esbuild"
 
 [[redirects]]
   from = "/*"
   to = "/.netlify/functions/server/:splat"
   status = 200
   force = true
-
-[functions]
-  directory = ".netlify/functions-internal"
