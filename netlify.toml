@@ -1,2 +1,22 @@
 [build.environment]
   NODE_VERSION = "20"
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_KEY,SUPABASE_SERVICE_KEY,SUPABASE_URL"
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  node_bundler = "esbuild"
+  directory = ".netlify/functions-internal"
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/server/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/_nuxt/*"
+  to = "/_nuxt/:splat"
+  status = 200
+
