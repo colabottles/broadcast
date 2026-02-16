@@ -2,6 +2,11 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
   modules: ['@nuxtjs/supabase'],
+
+  nitro: {
+    preset: 'netlify'
+  },
+
   ssr: true, // Disable SSR - use client-side rendering
   supabase: {
     redirect: true,
@@ -10,9 +15,6 @@ export default defineNuxtConfig({
       callback: '/confirm',
       exclude: ['/pricing', '/signup', '/forgot-password'],
     }
-  },
-  nitro: {
-    preset: 'netlify'
   },
   app: {
     head: {
