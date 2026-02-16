@@ -33,23 +33,23 @@ export default defineNuxtConfig({
     },
     baseURL: '/',
   },
-  vite: {
-    server: {
-      watch: {
-        usePolling: true,
-        interval: 100
-      },
+  // vite: {
+  //   server: {
+  //     watch: {
+  //       usePolling: true,
+  //       interval: 100
+  //     },
       // Fix MIME type issues on Windows
     //   middlewareMode: false,
     //   fs: {
     //     strict: false
     //   }
-   },
+  //  },
     // // Force CSS to be extracted properly
     // build: {
     //   cssCodeSplit: true
     // }
-  },
+  // },
   css: ['~/assets/css/main.css'],
   typescript: {
     strict: true,
