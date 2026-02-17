@@ -106,6 +106,34 @@
       <!-- Image Upload -->
       <div class="form-group">
         <label for="image-upload">Images (optional)</label>
+
+        <!-- Compact toggle section -->
+        <div class="image-upload-controls">
+          <button
+            type="button"
+            class="btn btn-outline"
+            @click="triggerImageUpload"
+            :disabled="images.length >= 4">
+            📷 Add Images ({{ images.length }}/4)
+          </button>
+
+          <div class="alt-text-toggle">
+            <label class="toggle-switch">
+              <input
+                id="require-alt-text"
+                v-model="requireAltText"
+                type="checkbox"
+                @change="saveAltTextPreference" />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Enable alt text</span>
+          </div>
+        </div>
+
+        <p class="help-text">
+          Maximum 4 images. {{ requireAltText ? 'Alt text is optional but recommended for accessibility.' : 'Alt text is optional but recommended for accessibility.' }}
+        </p>
+
         <input
           id="image-upload"
           ref="imageInputRef"
@@ -114,16 +142,6 @@
           multiple
           @change="handleImageUpload"
           style="display: none;" />
-        <button
-          type="button"
-          class="btn btn-outline"
-          @click="triggerImageUpload"
-          :disabled="images.length >= 4">
-          📷 Add Images ({{ images.length }}/4)
-        </button>
-        <p style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--color-text-muted);">
-          Maximum 4 images. Alt text is required for accessibility.
-        </p>
 
         <!-- Image Previews -->
         <div v-if="images.length > 0" class="image-previews">
@@ -134,17 +152,17 @@
             <img :src="image.preview" :alt="image.alt_text || 'Image preview'"
               class="preview-image" />
             <div class="image-details">
-              <label :for="`alt-text-${index}`" class="label-required">
-                Alt Text (Required)
+              <label :for="`alt-text-${index}`" :class="{ 'label-required': requireAltText }">
+                Alt Text {{ requireAltText ? '(Required)' : '(Optional)' }}
               </label>
               <input
                 :id="`alt-text-${index}`"
                 v-model="image.alt_text"
                 type="text"
                 placeholder="Describe this image for accessibility"
-                required
+                :required="requireAltText"
                 @input="validateImages"
-                :aria-invalid="formSubmitted && !image.alt_text ? 'true' : 'false'" />
+                :aria-invalid="formSubmitted && requireAltText && !image.alt_text ? 'true' : 'false'" />
               <button
                 type="button"
                 class="btn btn-outline btn-sm"
@@ -154,9 +172,10 @@
             </div>
           </div>
         </div>
-        <p v-if="formSubmitted && hasImagesWithoutAltText" class="alert alert-error"
+        <p v-if="formSubmitted && requireAltText && hasImagesWithoutAltText"
+          class="alert alert-error"
           role="alert">
-          All images must have alt text for accessibility
+          All images should have alt text for accessibility
         </p>
       </div>
 
@@ -261,6 +280,12 @@ const draftId = ref<string | null>(null)
 // Load user profile for subscription check
 const userProfile = ref<any>(null)
 onMounted(async () => {
+  // Load alt text preference from localStorage
+  const savedPreference = localStorage.getItem('requireAltText')
+  if (savedPreference !== null) {
+    requireAltText.value = savedPreference === 'true'
+  }
+
   // Load draft from sessionStorage (coming from drafts page)
   const loadDraftData = sessionStorage.getItem('loadDraft')
 
@@ -421,6 +446,7 @@ const images = ref<Array<{ file: File; preview: string; alt_text: string; upload
 const isSubmitting = ref(false)
 const formSubmitted = ref(false)
 const statusMessage = ref<StatusMessage | null>(null)
+const requireAltText = ref(true)
 
 // Character counting
 const charCount = computed(() => postContent.value.length)
@@ -474,6 +500,10 @@ const clearForm = () => {
 
 const getPlatformById = (id: string) => {
   return platforms.value.find(p => p.id === id)
+}
+
+const saveAltTextPreference = () => {
+  localStorage.setItem('requireAltText', requireAltText.value.toString())
 }
 
 const formatPostForPlatform = (platformId: string) => {
@@ -613,8 +643,8 @@ const handleSubmit = async () => {
     return
   }
 
-  // Validate images have alt text
-  if (images.value.length > 0 && !validateImages()) {
+  // Validate images have alt text (only if required)
+  if (requireAltText.value && images.value.length > 0 && !validateImages()) {
     statusMessage.value = {
       type: 'error',
       text: 'All images must have alt text for accessibility'
@@ -853,5 +883,100 @@ useHead({
   border-radius: 4px;
   color: #92400e;
   font-size: 0.875rem;
+}
+
+/* Image upload controls - tight compact layout */
+.image-upload-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-sm);
+}
+
+.alt-text-toggle {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: auto;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.toggle-switch input[type="checkbox"] {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch input:checked+.toggle-slider {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+}
+
+.toggle-switch input:checked+.toggle-slider:before {
+  transform: translateX(20px);
+}
+
+.toggle-switch input:focus+.toggle-slider {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.toggle-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.help-text {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .image-upload-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .alt-text-toggle {
+    justify-content: flex-start;
+  }
 }
 </style>

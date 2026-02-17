@@ -1065,6 +1065,63 @@ useHead({
   color: #92400e;
 }
 
+.setting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+}
+
+.toggle-switch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  flex-direction: row-reverse;
+  /* This puts label on left */
+}
+
+.toggle-switch input[type="checkbox"] {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  appearance: none;
+  background-color: var(--color-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+  /* Prevent toggle from shrinking */
+}
+
+.toggle-switch input[type="checkbox"]:checked {
+  background-color: var(--color-primary);
+}
+
+.toggle-switch input[type="checkbox"]::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: white;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s;
+}
+
+.toggle-switch input[type="checkbox"]:checked::before {
+  transform: translateX(20px);
+}
+
+.toggle-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  user-select: none;
+  white-space: nowrap;
+  /* Prevent label wrapping */
+}
+
 /* Analytics Preview */
 .analytics-preview {
   margin-bottom: var(--space-2xl);
