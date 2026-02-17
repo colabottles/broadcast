@@ -62,8 +62,12 @@
         </div>
 
         <div v-if="quickPostMessage"
-          :class="['quick-post-message', `message-${quickPostMessage.type}`]">
+          :class="['quick-post-message', `message-${quickPostMessage.type}`]"
+          @click="dismissQuickPostMessage"
+          role="alert"
+          style="cursor: pointer;">
           {{ quickPostMessage.text }}
+          <span style="float: right; opacity: 0.7; font-size: 0.75rem;">(click to dismiss)</span>
         </div>
 
         <div v-if="connectedPlatforms === 0" class="quick-post-warning">
@@ -378,10 +382,10 @@ const handleQuickPost = async () => {
       // Clear form
       quickPostContent.value = ''
 
-      // Reload stats and recent posts
+      // Reload stats and recent posts after user can read message
       setTimeout(() => {
         window.location.reload()
-      }, 1500)
+      }, 2000)
     } else {
       quickPostMessage.value = {
         type: 'error',
@@ -395,12 +399,12 @@ const handleQuickPost = async () => {
     }
   } finally {
     isPosting.value = false
-
-    // Clear message after 5 seconds
-    setTimeout(() => {
-      quickPostMessage.value = null
-    }, 5000)
   }
+}
+
+// Add method to manually dismiss message
+const dismissQuickPostMessage = () => {
+  quickPostMessage.value = null
 }
 
 // Recent posts
