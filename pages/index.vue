@@ -376,21 +376,9 @@ const handleQuickPost = async () => {
     if (successCount > 0) {
       quickPostMessage.value = {
         type: 'success',
-        text: `Posted successfully to ${successCount} platform${successCount !== 1 ? 's' : ''}! 🎉`
+        text: `Posted successfully to ${successCount} platform${successCount !== 1 ? 's' : ''}! 🎉 Click to refresh.`
       }
-
-      // Clear form
-      quickPostContent.value = ''
-
-      // Reload stats and recent posts after user can read message
-      setTimeout(() => {
-        window.location.reload()
-      }, 2000)
-    } else {
-      quickPostMessage.value = {
-        type: 'error',
-        text: 'Failed to post. Please try again or use the full editor.'
-      }
+    // Clear form
     }
   } catch (error: any) {
     quickPostMessage.value = {
@@ -404,7 +392,12 @@ const handleQuickPost = async () => {
 
 // Add method to manually dismiss message
 const dismissQuickPostMessage = () => {
-  quickPostMessage.value = null
+  // If it was a success message, reload to show new post
+  if (quickPostMessage.value?.type === 'success') {
+    window.location.reload()
+  } else {
+    quickPostMessage.value = null
+  }
 }
 
 // Recent posts
