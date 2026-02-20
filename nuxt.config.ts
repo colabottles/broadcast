@@ -9,6 +9,8 @@ export default defineNuxtConfig({
 
   ssr: true, // Disable SSR - use client-side rendering
   supabase: {
+    url: process.env.SUPABASE_URL,
+    key: process.env.SUPABASE_KEY,
     redirect: true,
     redirectOptions: {
       login: '/login',
@@ -33,23 +35,6 @@ export default defineNuxtConfig({
     },
     baseURL: '/',
   },
-  // vite: {
-  //   server: {
-  //     watch: {
-  //       usePolling: true,
-  //       interval: 100
-  //     },
-      // Fix MIME type issues on Windows
-    //   middlewareMode: false,
-    //   fs: {
-    //     strict: false
-    //   }
-  //  },
-    // // Force CSS to be extracted properly
-    // build: {
-    //   cssCodeSplit: true
-    // }
-  // },
   css: ['~/assets/css/main.css'],
   typescript: {
     strict: true,
@@ -70,7 +55,7 @@ export default defineNuxtConfig({
         url: process.env.SUPABASE_URL,
         key: process.env.SUPABASE_KEY
       },
-      siteUrl: process.env.SITE_URL || 'https://brdcst.netlify.app'
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || (process.dev ? 'http://localhost:3000' : 'https://brdcst.netlify.app')
     }
   }
 })
