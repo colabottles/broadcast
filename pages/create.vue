@@ -98,6 +98,10 @@
         <div v-if="charWarning" class="char-warning" role="alert">
           ⚠️ {{ charWarning }}
         </div>
+        <p v-if="selectedPlatforms.includes('linkedin') && selectedPlatforms.length === 1"
+          class="mention-linkedin-notice">
+          ℹ️ LinkedIn doesn't support @mentions via third-party apps. Tags won't notify anyone.
+        </p>
         <p id="content-help" class="sr-only">
           Enter the content you want to post across your selected social media platforms. Type @ to
           mention
@@ -522,6 +526,13 @@ function handleTextareaInput(event: Event) {
   const atMatch = textBeforeCursor.match(/@([^\s@]*)$/)
 
   if (atMatch) {
+    // Don't show mention dropdown if only LinkedIn is selected
+    const nonLinkedIn = selectedPlatforms.value.filter(p => p !== 'linkedin')
+    if (nonLinkedIn.length === 0) {
+      closeMentionDropdown()
+      return
+    }
+
     mentionQuery.value = atMatch[1] ?? ''
     mentionStartPos.value = cursorPos - (atMatch[0]?.length ?? 0)
     activeMentionIndex.value = -1
@@ -1188,6 +1199,12 @@ useHead({
 
 .mention-insert-plain:hover {
   background: var(--color-surface-hover, #f1f5f9);
+}
+
+.mention-linkedin-notice {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #64748b);
 }
 
 /* ─── Existing styles ──────────────────────────────────── */
