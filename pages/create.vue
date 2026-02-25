@@ -5,17 +5,90 @@
       <!-- Post Content -->
       <div class="form-group">
         <label for="post-content" class="label-required">Post Content</label>
-        <textarea
-          id="post-content"
-          v-model="postContent"
-          placeholder="What's on your mind?"
-          required
-          aria-required="true"
-          aria-describedby="char-count content-help"></textarea>
-        <div
-          id="char-count"
-          :class="['char-counter', charCountClass]"
-          role="status"
+        <div class="textarea-wrapper" ref="textareaWrapperRef">
+          <textarea
+            id="post-content"
+            ref="textareaRef"
+            v-model="postContent"
+            placeholder="What's on your mind? Type @ to mention someone."
+            required
+            aria-required="true"
+            aria-describedby="char-count content-help"
+            :aria-expanded="showMentionDropdown"
+            aria-autocomplete="list"
+            :aria-activedescendant="activeMentionIndex >= 0 ? `mention-option-${activeMentionIndex}` : ''"
+            @keydown="handleTextareaKeydown"
+            @input="handleTextareaInput"
+            @blur="handleTextareaBlur"></textarea>
+
+          <!-- Mention Autocomplete Dropdown -->
+          <div
+            v-if="showMentionDropdown"
+            class="mention-dropdown"
+            role="listbox"
+            :style="mentionDropdownStyle"
+            aria-label="Mention suggestions">
+
+            <!-- Platform tabs when multiple platforms selected -->
+            <div v-if="selectedPlatforms.length > 1" class="mention-tabs" role="tablist">
+              <button
+                v-for="pid in mentionSearchPlatforms"
+                :key="pid"
+                type="button"
+                role="tab"
+                class="mention-tab"
+                :class="{ 'mention-tab-active': activeMentionPlatform === pid }"
+                :aria-selected="activeMentionPlatform === pid"
+                @mousedown.prevent="activeMentionPlatform = pid; searchMentions()">
+                {{ getPlatformById(pid)?.name }}
+              </button>
+            </div>
+
+            <div v-if="mentionLoading" class="mention-loading" aria-live="polite">
+              Searching...
+            </div>
+
+            <div v-else-if="mentionResults.length === 0 && !mentionLoading" class="mention-empty">
+              <template v-if="activeMentionPlatform === 'linkedin'">
+                LinkedIn doesn't support user search — type the name and it will be inserted as
+                plain text
+              </template>
+              <template v-else>
+                No users found for "{{ mentionQuery }}"
+              </template>
+            </div>
+
+            <ul v-else class="mention-list">
+              <li v-for="(result, index) in mentionResults" :key="`${result.platform}-${result.id}`"
+                :id="`mention-option-${index}`" role="option" class="mention-option"
+                :class="{ 'mention-option-active': activeMentionIndex === index }"
+                :aria-selected="activeMentionIndex === index"
+                @mousedown.prevent="insertMention(result)">
+                <img v-if="result.avatar" :src="result.avatar"
+                  :alt="`${result.display_name} avatar`"
+                  class="mention-avatar" width="32" height="32" />
+                <span v-else class="mention-avatar-placeholder" aria-hidden="true">
+                  {{ result.display_name.charAt(0).toUpperCase() }}
+                </span>
+                <span class="mention-info">
+                  <span class="mention-display-name">{{ result.display_name }}</span>
+                  <span class="mention-handle">{{ result.mention_text }}</span>
+                </span>
+              </li>
+            </ul>
+
+            <!-- LinkedIn plain text fallback -->
+            <div v-if="activeMentionPlatform === 'linkedin' && mentionQuery"
+              class="mention-linkedin-insert">
+              <button type="button" class="mention-insert-plain"
+                @mousedown.prevent="insertLinkedInMention">
+                Insert "@{{ mentionQuery }}" as plain text
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="char-count" :class="['char-counter', charCountClass]" role="status"
           aria-live="polite">
           <span>{{ charCount }} characters</span>
           <span v-if="selectedPlatforms.length > 0">
@@ -26,7 +99,9 @@
           ⚠️ {{ charWarning }}
         </div>
         <p id="content-help" class="sr-only">
-          Enter the content you want to post across your selected social media platforms
+          Enter the content you want to post across your selected social media platforms. Type @ to
+          mention
+          users.
         </p>
       </div>
 
@@ -37,10 +112,7 @@
             Select Platforms
           </legend>
           <div class="platforms-grid" role="group" aria-labelledby="platforms-label">
-            <button
-              v-for="platform in availablePlatforms"
-              :key="platform.id"
-              type="button"
+            <button v-for="platform in availablePlatforms" :key="platform.id" type="button"
               class="platform-button"
               :class="{ 'platform-selected': selectedPlatforms.includes(platform.id) }"
               @click="togglePlatform(platform.id)"
@@ -67,31 +139,18 @@
         <label for="tag-input">Tags (optional)</label>
         <div class="tags-input-wrapper">
           <div class="tags-container" @click="focusTagInput">
-            <span
-              v-for="(tag, index) in tags"
-              :key="index"
-              class="tag"
-              role="listitem">
+            <span v-for="(tag, index) in tags" :key="index" class="tag" role="listitem">
               {{ tag }}
-              <button
-                type="button"
-                class="tag-remove"
-                @click="removeTag(index)"
+              <button type="button" class="tag-remove" @click="removeTag(index)"
                 :aria-label="`Remove tag ${tag}`">
                 ✕
               </button>
             </span>
-            <input
-              id="tag-input"
-              ref="tagInputRef"
-              v-model="currentTag"
-              type="text"
+            <input id="tag-input" ref="tagInputRef" v-model="currentTag" type="text"
               class="tag-input"
-              placeholder="Add tags..."
-              @keydown.enter.prevent="addTag"
+              placeholder="Add tags..." @keydown.enter.prevent="addTag"
               @keydown.comma.prevent="addTag"
-              @keydown.space.prevent="addTag"
-              aria-describedby="tag-help" />
+              @keydown.space.prevent="addTag" aria-describedby="tag-help" />
           </div>
           <p id="tag-help" class="sr-only">
             Press Enter, Space, or Comma to add a tag. Tags will be formatted according to each
@@ -109,20 +168,14 @@
 
         <!-- Compact toggle section -->
         <div class="image-upload-controls">
-          <button
-            type="button"
-            class="btn btn-outline"
-            @click="triggerImageUpload"
+          <button type="button" class="btn btn-outline" @click="triggerImageUpload"
             :disabled="images.length >= 4">
             📷 Add Images ({{ images.length }}/4)
           </button>
 
           <div class="alt-text-toggle">
             <label class="toggle-switch">
-              <input
-                id="require-alt-text"
-                v-model="requireAltText"
-                type="checkbox"
+              <input id="require-alt-text" v-model="requireAltText" type="checkbox"
                 @change="saveAltTextPreference" />
               <span class="toggle-slider"></span>
             </label>
@@ -134,39 +187,23 @@
           Maximum 4 images. {{ requireAltText ? 'Alt text is optional but recommended for accessibility.' : 'Alt text is optional but recommended for accessibility.' }}
         </p>
 
-        <input
-          id="image-upload"
-          ref="imageInputRef"
-          type="file"
-          accept="image/*"
-          multiple
-          @change="handleImageUpload"
-          style="display: none;" />
+        <input id="image-upload" ref="imageInputRef" type="file" accept="image/*" multiple
+          @change="handleImageUpload" style="display: none;" />
 
         <!-- Image Previews -->
         <div v-if="images.length > 0" class="image-previews">
-          <div
-            v-for="(image, index) in images"
-            :key="index"
-            class="image-preview-item">
+          <div v-for="(image, index) in images" :key="index" class="image-preview-item">
             <img :src="image.preview" :alt="image.alt_text || 'Image preview'"
               class="preview-image" />
             <div class="image-details">
               <label :for="`alt-text-${index}`" :class="{ 'label-required': requireAltText }">
                 Alt Text {{ requireAltText ? '(Required)' : '(Optional)' }}
               </label>
-              <input
-                :id="`alt-text-${index}`"
-                v-model="image.alt_text"
-                type="text"
-                placeholder="Describe this image for accessibility"
-                :required="requireAltText"
+              <input :id="`alt-text-${index}`" v-model="image.alt_text" type="text"
+                placeholder="Describe this image for accessibility" :required="requireAltText"
                 @input="validateImages"
                 :aria-invalid="formSubmitted && requireAltText && !image.alt_text ? 'true' : 'false'" />
-              <button
-                type="button"
-                class="btn btn-outline btn-sm"
-                @click="removeImage(index)">
+              <button type="button" class="btn btn-outline btn-sm" @click="removeImage(index)">
                 Remove
               </button>
             </div>
@@ -184,10 +221,7 @@
         <div class="scheduling-header">
           <label for="schedule-toggle">Schedule Post</label>
           <label class="toggle-switch">
-            <input
-              id="schedule-toggle"
-              v-model="schedulePost"
-              type="checkbox" />
+            <input id="schedule-toggle" v-model="schedulePost" type="checkbox" />
             <span class="toggle-slider"></span>
           </label>
         </div>
@@ -195,13 +229,8 @@
         <div v-if="schedulePost" class="scheduling-controls">
           <div class="form-group">
             <label for="schedule-date" class="label-required">Date & Time</label>
-            <input
-              id="schedule-date"
-              v-model="scheduledDateTime"
-              type="datetime-local"
-              :min="minScheduleDateTime"
-              required
-              aria-required="true" />
+            <input id="schedule-date" v-model="scheduledDateTime" type="datetime-local"
+              :min="minScheduleDateTime" required aria-required="true" />
             <p style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--color-text-muted);">
               Your timezone: {{ userTimezone }}
             </p>
@@ -216,18 +245,14 @@
       </div>
 
       <!-- Preview Section -->
-      <section
-        v-if="selectedPlatforms.length > 0"
-        class="preview-card"
+      <section v-if="selectedPlatforms.length > 0" class="preview-card"
         aria-labelledby="preview-heading">
         <h3 id="preview-heading">Platform Previews</h3>
-        <div
-          v-for="platformId in selectedPlatforms"
-          :key="platformId"
+        <div v-for="platformId in selectedPlatforms" :key="platformId"
           style="margin-bottom: 1.5rem;">
           <h4>{{ getPlatformById(platformId)?.name }}</h4>
           <div class="preview-content" role="region"
-            :aria-label="`Preview for ${getPlatformById(platformId)?.name}`">
+            :aria-label="`Preview for ${getPlatformById(platformId)?.name ?? platformId}`">
             {{ formatPostForPlatform(platformId) }}
           </div>
         </div>
@@ -240,28 +265,17 @@
 
       <!-- Action Buttons -->
       <div class="btn-group">
-        <button
-          type="submit"
-          class="btn btn-primary"
-          :disabled="isSubmitting"
+        <button type="submit" class="btn btn-primary" :disabled="isSubmitting"
           :aria-busy="isSubmitting || charCount > 300">
           <span v-if="isSubmitting" class="spinner" aria-hidden="true"></span>
           {{ isSubmitting ? 'Posting...' : 'Post to Platforms' }}
         </button>
 
-        <button
-          type="button"
-          class="btn btn-secondary"
-          @click="saveDraft"
-          :disabled="isSubmitting">
+        <button type="button" class="btn btn-secondary" @click="saveDraft" :disabled="isSubmitting">
           Save Draft
         </button>
 
-        <button
-          type="button"
-          class="btn btn-outline"
-          @click="clearForm"
-          :disabled="isSubmitting">
+        <button type="button" class="btn btn-outline" @click="clearForm" :disabled="isSubmitting">
           Clear
         </button>
       </div>
@@ -293,7 +307,6 @@ onMounted(async () => {
     try {
       const draft = JSON.parse(loadDraftData)
 
-      // Store the draft ID so we update instead of creating new
       draftId.value = draft.id
 
       postContent.value = draft.content || ''
@@ -307,14 +320,12 @@ onMounted(async () => {
 
       sessionStorage.removeItem('loadDraft')
 
-      // Show persistent message about images if draft had images
       const hasImages = draft.images && draft.images.length > 0
       if (hasImages) {
         statusMessage.value = {
           type: 'info',
           text: `Draft loaded. Please re-add ${draft.images.length} image(s) before posting.`
         }
-        // Don't auto-dismiss - will be cleared when images are added
       } else {
         statusMessage.value = {
           type: 'info',
@@ -329,7 +340,6 @@ onMounted(async () => {
     }
   }
 
-  // Load user profile for subscription check
   if (user.value) {
     const { data } = await supabase
       .from('profiles')
@@ -354,7 +364,7 @@ const scheduledDateTime = ref('')
 const userTimezone = ref(Intl.DateTimeFormat().resolvedOptions().timeZone)
 const minScheduleDateTime = computed(() => {
   const now = new Date()
-  now.setMinutes(now.getMinutes() + 5) // Minimum 5 minutes from now
+  now.setMinutes(now.getMinutes() + 5)
   return now.toISOString().slice(0, 16)
 })
 
@@ -386,6 +396,15 @@ interface PostResponse {
   message?: string
   results?: Record<string, PostResult>
   timestamp?: string
+}
+
+interface MentionResult {
+  platform: string
+  id: string
+  handle: string
+  display_name: string
+  avatar: string | null
+  mention_text: string
 }
 
 // Available platforms with icons
@@ -422,20 +441,244 @@ const availablePlatforms = ref<Platform[]>([
   }
 ])
 
-// Platform configurations (for backwards compatibility with existing code)
 const platforms = availablePlatforms
+
+// ─── Mention Autocomplete ──────────────────────────────────────────────────
+
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const textareaWrapperRef = ref<HTMLDivElement | null>(null)
+const showMentionDropdown = ref(false)
+const mentionQuery = ref('')
+const mentionResults = ref<MentionResult[]>([])
+const mentionLoading = ref(false)
+const activeMentionIndex = ref(-1)
+const activeMentionPlatform = ref('')
+const mentionDropdownStyle = ref({})
+const mentionStartPos = ref(-1)
+
+// Platforms that support mentions (all selected, linkedin is plain text)
+const mentionSearchPlatforms = computed(() => {
+  return selectedPlatforms.value
+})
+
+let mentionDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
+function getCaretCoordinates(element: HTMLTextAreaElement, position: number) {
+  // Create a mirror div to measure caret position
+  const div = document.createElement('div')
+  const style = window.getComputedStyle(element)
+
+    ;[
+      'direction', 'boxSizing', 'width', 'height', 'overflowX', 'overflowY',
+      'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+      'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+      'fontStyle', 'fontVariant', 'fontWeight', 'fontStretch', 'fontSize',
+      'fontSizeAdjust', 'lineHeight', 'fontFamily', 'textAlign', 'textTransform',
+      'textIndent', 'textDecoration', 'letterSpacing', 'wordSpacing'
+    ].forEach(prop => {
+      div.style[prop as any] = style[prop as any] ?? ''
+    })
+
+  div.style.position = 'absolute'
+  div.style.visibility = 'hidden'
+  div.style.whiteSpace = 'pre-wrap'
+  div.style.wordWrap = 'break-word'
+
+  document.body.appendChild(div)
+
+  div.textContent = element.value.substring(0, position)
+  const span = document.createElement('span')
+  span.textContent = element.value.substring(position) || '.'
+  div.appendChild(span)
+
+  const rect = element.getBoundingClientRect()
+  const spanRect = span.getBoundingClientRect()
+  const top = spanRect.top - rect.top + element.scrollTop
+  const left = spanRect.left - rect.left + element.scrollLeft
+
+  document.body.removeChild(div)
+  return { top, left }
+}
+
+function positionDropdown() {
+  if (!textareaRef.value || mentionStartPos.value < 0) return
+
+  const coords = getCaretCoordinates(textareaRef.value, mentionStartPos.value)
+  const lineHeight = parseInt(window.getComputedStyle(textareaRef.value).lineHeight) || 20
+
+  mentionDropdownStyle.value = {
+    top: `${coords.top + lineHeight + 4}px`,
+    left: `${Math.min(coords.left, textareaRef.value.offsetWidth - 280)}px`
+  }
+}
+
+function handleTextareaInput(event: Event) {
+  const textarea = event.target as HTMLTextAreaElement
+  const value = textarea.value
+  const cursorPos = textarea.selectionStart ?? 0
+
+  // Find the @ that triggered this mention
+  const textBeforeCursor = value.substring(0, cursorPos)
+  const atMatch = textBeforeCursor.match(/@([^\s@]*)$/)
+
+  if (atMatch) {
+    mentionQuery.value = atMatch[1] ?? ''
+    mentionStartPos.value = cursorPos - (atMatch[0]?.length ?? 0)
+    activeMentionIndex.value = -1
+
+    // Set default platform if not set
+    if (!activeMentionPlatform.value && selectedPlatforms.value.length > 0) {
+      activeMentionPlatform.value = selectedPlatforms.value[0] ?? ''
+    }
+
+    showMentionDropdown.value = true
+    positionDropdown()
+
+    // Debounce the search
+    if (mentionDebounceTimer) clearTimeout(mentionDebounceTimer)
+    mentionDebounceTimer = setTimeout(() => {
+      if (mentionQuery.value.length >= 1) {
+        searchMentions()
+      } else {
+        mentionResults.value = []
+      }
+    }, 300)
+  } else {
+    closeMentionDropdown()
+  }
+}
+
+function handleTextareaKeydown(event: KeyboardEvent) {
+  if (!showMentionDropdown.value) return
+
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault()
+      activeMentionIndex.value = Math.min(
+        activeMentionIndex.value + 1,
+        mentionResults.value.length - 1
+      )
+      break
+    case 'ArrowUp':
+      event.preventDefault()
+      activeMentionIndex.value = Math.max(activeMentionIndex.value - 1, -1)
+      break
+    case 'Enter':
+    case 'Tab':
+      if (activeMentionIndex.value >= 0 && mentionResults.value[activeMentionIndex.value]) {
+        event.preventDefault()
+        insertMention(mentionResults.value[activeMentionIndex.value] as MentionResult)
+      } else if (activeMentionPlatform.value === 'linkedin' && mentionQuery.value) {
+        event.preventDefault()
+        insertLinkedInMention()
+      }
+      break
+    case 'Escape':
+      event.preventDefault()
+      closeMentionDropdown()
+      break
+  }
+}
+
+function handleTextareaBlur() {
+  // Small delay so click on dropdown option can fire first
+  setTimeout(() => {
+    closeMentionDropdown()
+  }, 150)
+}
+
+async function searchMentions() {
+  if (!activeMentionPlatform.value) return
+
+  // LinkedIn has no search API
+  if (activeMentionPlatform.value === 'linkedin') {
+    mentionResults.value = []
+    return
+  }
+
+  mentionLoading.value = true
+  try {
+    const data = await $fetch<{ results: MentionResult[] }>('/api/users/search', {
+      query: {
+        q: mentionQuery.value,
+        platform: activeMentionPlatform.value
+      }
+    })
+    mentionResults.value = data.results || []
+  } catch (error) {
+    console.error('Mention search error:', error)
+    mentionResults.value = []
+  } finally {
+    mentionLoading.value = false
+  }
+}
+
+function insertMention(result: MentionResult) {
+  if (!textareaRef.value) return
+
+  const textarea = textareaRef.value
+  const before = postContent.value.substring(0, mentionStartPos.value)
+  const after = postContent.value.substring(textarea.selectionStart ?? 0)
+
+  // Insert the mention text followed by a space
+  postContent.value = `${before}${result.mention_text} ${after}`
+
+  // Move cursor after the inserted mention
+  const newCursorPos = mentionStartPos.value + result.mention_text.length + 1
+  nextTick(() => {
+    textarea.focus()
+    textarea.setSelectionRange(newCursorPos, newCursorPos)
+  })
+
+  closeMentionDropdown()
+}
+
+function insertLinkedInMention() {
+  if (!textareaRef.value || !mentionQuery.value) return
+
+  const textarea = textareaRef.value
+  const mentionText = `@${mentionQuery.value}`
+  const before = postContent.value.substring(0, mentionStartPos.value)
+  const after = postContent.value.substring(textarea.selectionStart ?? 0)
+
+  postContent.value = `${before}${mentionText} ${after}`
+
+  const newCursorPos = mentionStartPos.value + mentionText.length + 1
+  nextTick(() => {
+    textarea.focus()
+    textarea.setSelectionRange(newCursorPos, newCursorPos)
+  })
+
+  closeMentionDropdown()
+}
+
+function closeMentionDropdown() {
+  showMentionDropdown.value = false
+  mentionResults.value = []
+  mentionQuery.value = ''
+  mentionStartPos.value = -1
+  activeMentionIndex.value = -1
+}
 
 // Toggle platform selection
 const togglePlatform = (platformId: string) => {
   const index = selectedPlatforms.value.indexOf(platformId)
   if (index > -1) {
     selectedPlatforms.value.splice(index, 1)
+    // Reset mention platform if removed
+    if (activeMentionPlatform.value === platformId) {
+      activeMentionPlatform.value = selectedPlatforms.value[0] || ''
+    }
   } else {
     selectedPlatforms.value.push(platformId)
+    if (!activeMentionPlatform.value) {
+      activeMentionPlatform.value = platformId
+    }
   }
 }
 
-// Form state
+// ─── Form State ────────────────────────────────────────────────────────────
+
 const postContent = ref('')
 const selectedPlatforms = ref<string[]>([])
 const tags = ref<string[]>([])
@@ -456,7 +699,6 @@ const charCountClass = computed(() => {
   return ''
 })
 
-// Add warning message
 const charWarning = computed(() => {
   if (charCount.value > 300) {
     return 'Post exceeds Bluesky limit (300 chars). It will fail on Bluesky.'
@@ -467,14 +709,12 @@ const charWarning = computed(() => {
 const maxCharLimit = computed(() => {
   if (selectedPlatforms.value.length === 0) return 0
 
-  // Platform character limits
   const limits: Record<string, number> = {
     bluesky: 300,
     mastodon: 500,
     linkedin: 3000
   }
 
-  // Find the minimum limit among selected platforms (most restrictive)
   const selectedLimits = selectedPlatforms.value
     .map(id => {
       const platform = platforms.value.find(p => p.id === id)
@@ -484,7 +724,6 @@ const maxCharLimit = computed(() => {
   return Math.min(...selectedLimits)
 })
 
-// Methods
 const clearForm = () => {
   postContent.value = ''
   selectedPlatforms.value = []
@@ -495,7 +734,8 @@ const clearForm = () => {
   scheduledDateTime.value = ''
   formSubmitted.value = false
   statusMessage.value = null
-  draftId.value = null  // Clear draft ID
+  draftId.value = null
+  closeMentionDropdown()
 }
 
 const getPlatformById = (id: string) => {
@@ -512,11 +752,9 @@ const formatPostForPlatform = (platformId: string) => {
 
   let formattedPost = postContent.value
 
-  // Add tags if any
   if (tags.value.length > 0) {
     const formattedTags = tags.value
       .map(tag => {
-        // Remove any existing # symbols
         const cleanTag = tag.replace(/^#/, '')
         return `${platform.hashtagSymbol}${cleanTag}`
       })
@@ -547,7 +785,6 @@ const focusTagInput = () => {
   })
 }
 
-// Image upload methods
 const triggerImageUpload = () => {
   imageInputRef.value?.click()
 }
@@ -558,30 +795,20 @@ const handleImageUpload = (event: Event) => {
 
   if (!files) return
 
-  // Limit to 4 images total
   const remainingSlots = 4 - images.value.length
   const filesToAdd = Array.from(files).slice(0, remainingSlots)
 
   filesToAdd.forEach(file => {
-    // Validate file type
     if (!file.type.startsWith('image/')) {
-      statusMessage.value = {
-        type: 'error',
-        text: 'Only image files are allowed'
-      }
+      statusMessage.value = { type: 'error', text: 'Only image files are allowed' }
       return
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      statusMessage.value = {
-        type: 'error',
-        text: 'Image must be smaller than 5MB'
-      }
+      statusMessage.value = { type: 'error', text: 'Image must be smaller than 5MB' }
       return
     }
 
-    // Create preview
     const reader = new FileReader()
     reader.onload = (e) => {
       images.value.push({
@@ -590,7 +817,6 @@ const handleImageUpload = (event: Event) => {
         alt_text: ''
       })
 
-      // Clear the persistent image warning message if it's showing
       if (statusMessage.value?.type === 'info' && statusMessage.value?.text.includes('re-add')) {
         statusMessage.value = null
       }
@@ -598,7 +824,6 @@ const handleImageUpload = (event: Event) => {
     reader.readAsDataURL(file)
   })
 
-  // Reset input
   input.value = ''
 }
 
@@ -607,7 +832,6 @@ const removeImage = (index: number) => {
 }
 
 const validateImages = () => {
-  // Check if all images have alt text
   return images.value.every(img => img.alt_text.trim().length > 0)
 }
 
@@ -618,20 +842,13 @@ const hasImagesWithoutAltText = computed(() => {
 const handleSubmit = async () => {
   formSubmitted.value = true
 
-  // Validation
   if (!postContent.value.trim()) {
-    statusMessage.value = {
-      type: 'error',
-      text: 'Please enter post content'
-    }
+    statusMessage.value = { type: 'error', text: 'Please enter post content' }
     return
   }
 
   if (selectedPlatforms.value.length === 0) {
-    statusMessage.value = {
-      type: 'error',
-      text: 'Please select at least one platform'
-    }
+    statusMessage.value = { type: 'error', text: 'Please select at least one platform' }
     return
   }
 
@@ -643,7 +860,6 @@ const handleSubmit = async () => {
     return
   }
 
-  // Validate images have alt text (only if required)
   if (requireAltText.value && images.value.length > 0 && !validateImages()) {
     statusMessage.value = {
       type: 'error',
@@ -656,25 +872,17 @@ const handleSubmit = async () => {
   statusMessage.value = null
 
   try {
-    // Upload images first if any
     const uploadedImages: Array<{ url: string; alt_text: string; file_name: string }> = []
 
     if (images.value.length > 0) {
-      statusMessage.value = {
-        type: 'info',
-        text: 'Uploading images...'
-      }
+      statusMessage.value = { type: 'info', text: 'Uploading images...' }
 
       for (const image of images.value) {
         const formData = new FormData()
         formData.append('file', image.file)
         formData.append('alt_text', image.alt_text)
 
-        type UploadResponse = {
-          success: boolean
-          url: string
-          message?: string
-        }
+        type UploadResponse = { success: boolean; url: string; message?: string }
 
         const uploadResponse = await $fetch<UploadResponse>('/api/upload-image', {
           method: 'POST',
@@ -694,7 +902,6 @@ const handleSubmit = async () => {
       text: schedulePost.value ? 'Scheduling post...' : 'Posting to platforms...'
     }
 
-    // Call the real posting API
     const response = await $fetch<PostResponse>('/api/post', {
       method: 'POST',
       body: {
@@ -702,11 +909,12 @@ const handleSubmit = async () => {
         platforms: selectedPlatforms.value,
         tags: tags.value,
         images: uploadedImages,
-        scheduled_for: schedulePost.value && scheduledDateTime.value ? new Date(scheduledDateTime.value).toISOString() : null
+        scheduled_for: schedulePost.value && scheduledDateTime.value
+          ? new Date(scheduledDateTime.value).toISOString()
+          : null
       }
     })
 
-    // Check if scheduled
     if (response.scheduled) {
       statusMessage.value = {
         type: 'success',
@@ -716,7 +924,6 @@ const handleSubmit = async () => {
       return
     }
 
-    // Check results
     const successPlatforms = response.results
       ? Object.entries(response.results)
         .filter(([_, result]) => (result as PostResult).success)
@@ -738,7 +945,6 @@ const handleSubmit = async () => {
         text: `Successfully posted to ${successPlatforms.length} platform(s)!`
       }
 
-      // Show failures if any
       if (failedPlatforms.length > 0) {
         setTimeout(() => {
           statusMessage.value = {
@@ -748,12 +954,8 @@ const handleSubmit = async () => {
         }, 3000)
       }
 
-      // Clear form after successful post
-      setTimeout(() => {
-        clearForm()
-      }, 2000)
+      setTimeout(() => { clearForm() }, 2000)
     } else {
-      // All failed
       statusMessage.value = {
         type: 'error',
         text: 'Failed to post to all platforms. Please check your connections.'
@@ -763,12 +965,8 @@ const handleSubmit = async () => {
   } catch (error: any) {
     console.error('Post error:', error)
 
-    // Handle specific error cases
     if (error.statusCode === 401) {
-      statusMessage.value = {
-        type: 'error',
-        text: 'Please log in to continue'
-      }
+      statusMessage.value = { type: 'error', text: 'Please log in to continue' }
     } else if (error.statusCode === 403) {
       statusMessage.value = {
         type: 'error',
@@ -792,15 +990,11 @@ const handleSubmit = async () => {
 
 const saveDraft = async () => {
   if (!postContent.value.trim()) {
-    statusMessage.value = {
-      type: 'error',
-      text: 'Cannot save empty draft'
-    }
+    statusMessage.value = { type: 'error', text: 'Cannot save empty draft' }
     return
   }
 
   try {
-    // Prepare images data (only save metadata, not file objects)
     const imageData = images.value.map(img => ({
       url: img.uploaded_url || img.preview,
       alt_text: img.alt_text,
@@ -818,7 +1012,6 @@ const saveDraft = async () => {
         : null
     }
 
-    // If we have a draftId, update existing draft. Otherwise create new one.
     if (draftId.value) {
       const { error } = await (supabase as any)
         .from('drafts')
@@ -834,9 +1027,7 @@ const saveDraft = async () => {
         .single()
 
       if (error) throw error
-      if (data) {
-        draftId.value = data.id
-      }
+      if (data) { draftId.value = data.id }
     }
 
     statusMessage.value = {
@@ -844,19 +1035,13 @@ const saveDraft = async () => {
       text: draftId.value ? 'Draft updated successfully!' : 'Draft saved successfully!'
     }
 
-    setTimeout(() => {
-      statusMessage.value = null
-    }, 3000)
+    setTimeout(() => { statusMessage.value = null }, 3000)
 
   } catch (error: any) {
-    statusMessage.value = {
-      type: 'error',
-      text: error.message || 'Failed to save draft'
-    }
+    statusMessage.value = { type: 'error', text: error.message || 'Failed to save draft' }
   }
 }
 
-// SEO
 useHead({
   title: 'Create Post - Broadcast',
   meta: [
@@ -866,6 +1051,146 @@ useHead({
 </script>
 
 <style scoped>
+.textarea-wrapper {
+  position: relative;
+}
+
+/* ─── Mention Dropdown ─────────────────────────────────── */
+.mention-dropdown {
+  position: absolute;
+  z-index: 100;
+  min-width: 280px;
+  max-width: 360px;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.mention-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+}
+
+.mention-tab {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted, #64748b);
+  transition: background 0.15s;
+}
+
+.mention-tab:hover {
+  background: var(--color-surface-hover, #f8fafc);
+}
+
+.mention-tab-active {
+  color: var(--color-primary, #3b82f6);
+  border-bottom: 2px solid var(--color-primary, #3b82f6);
+}
+
+.mention-loading,
+.mention-empty {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #64748b);
+}
+
+.mention-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.mention-option {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.mention-option:hover,
+.mention-option-active {
+  background: var(--color-surface-hover, #f1f5f9);
+}
+
+.mention-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.mention-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-primary, #3b82f6);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.mention-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mention-display-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mention-handle {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mention-linkedin-insert {
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  padding: 0.5rem;
+}
+
+.mention-insert-plain {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: 1px dashed var(--color-border, #e2e8f0);
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted, #64748b);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.mention-insert-plain:hover {
+  background: var(--color-surface-hover, #f1f5f9);
+}
+
+/* ─── Existing styles ──────────────────────────────────── */
 .char-counter-warning {
   color: var(--color-warning, #f59e0b);
 }
@@ -885,7 +1210,6 @@ useHead({
   font-size: 0.875rem;
 }
 
-/* Image upload controls - tight compact layout */
 .image-upload-controls {
   display: flex;
   align-items: center;
@@ -968,7 +1292,6 @@ useHead({
   margin-bottom: 0;
 }
 
-/* Responsive adjustments */
 @media (max-width: 640px) {
   .image-upload-controls {
     flex-direction: column;

@@ -248,6 +248,9 @@ export default defineEventHandler(async (event) => {
 })
 
 // Platform-specific posting functions
+// Replace the postToBluesky function in server/api/post.ts with this version.
+// It adds mention facets (@handle resolution) alongside the existing hashtag facets.
+
 async function postToBluesky(connection: any, content: string, images?: any[], tags?: string[]): Promise<PostResult> {
   const agent = new AtpAgent({
     service: 'https://bsky.social'
@@ -262,43 +265,66 @@ async function postToBluesky(connection: any, content: string, images?: any[], t
   })
 
   try {
-    // Add hashtags to content
     let fullText = content
     const facets: Array<{
       index: { byteStart: number; byteEnd: number }
-      features: Array<{ $type: string; tag: string }>
+      features: Array<{ $type: string; tag?: string; did?: string }>
     }> = []
 
+    // Add hashtags to text
     if (tags && tags.length > 0) {
       const hashtags = tags.map(tag => `#${tag.replace(/^#/, '')}`).join(' ')
       fullText = `${content}\n\n${hashtags}`
+    }
 
-      // Create facets for each hashtag to make them clickable
-      const encoder = new TextEncoder()
+    const encoder = new TextEncoder()
 
+    // Build hashtag facets
+    if (tags && tags.length > 0) {
       tags.forEach(tag => {
         const cleanTag = tag.replace(/^#/, '')
         const hashtagText = `#${cleanTag}`
         const start = fullText.indexOf(hashtagText)
 
         if (start !== -1) {
-          // Calculate byte positions (Bluesky uses UTF-8 byte positions)
           const beforeText = fullText.substring(0, start)
           const byteStart = encoder.encode(beforeText).length
           const byteEnd = byteStart + encoder.encode(hashtagText).length
 
           facets.push({
-            index: {
-              byteStart,
-              byteEnd
-            },
-            features: [{
-              $type: 'app.bsky.richtext.facet#tag',
-              tag: cleanTag
-            }]
+            index: { byteStart, byteEnd },
+            features: [{ $type: 'app.bsky.richtext.facet#tag', tag: cleanTag }]
           })
         }
       })
+    }
+
+    // Build mention facets — resolve each @handle to a DID
+    const mentionRegex = /@([\w.-]+\.\w+)/g
+    let match
+    while ((match = mentionRegex.exec(fullText)) !== null) {
+      const handle = match[1]
+      if (!handle) continue
+      try {
+        const resolveRes = await fetch(`https://bsky.social/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`)
+        if (!resolveRes.ok) continue
+        const resolveData = await resolveRes.json() as { did?: string }
+        const did = resolveData.did
+        if (!did) continue
+
+        const matchText = match[0] ?? ''
+        const beforeText = fullText.substring(0, match.index)
+        const byteStart = encoder.encode(beforeText).length
+        const byteEnd = byteStart + encoder.encode(matchText).length
+
+        facets.push({
+          index: { byteStart, byteEnd },
+          features: [{ $type: 'app.bsky.richtext.facet#mention', did }]
+        })
+      } catch (err) {
+        // Handle couldn't be resolved — leave as plain text, don't fail the post
+        console.warn(`Could not resolve Bluesky handle: ${handle}`)
+      }
     }
 
     const postData: any = {
@@ -306,7 +332,6 @@ async function postToBluesky(connection: any, content: string, images?: any[], t
       createdAt: new Date().toISOString()
     }
 
-    // Add facets if we have any
     if (facets.length > 0) {
       postData.facets = facets
     }
@@ -318,8 +343,6 @@ async function postToBluesky(connection: any, content: string, images?: any[], t
       for (const image of images) {
         const imageResponse = await fetch(image.url)
         const imageBuffer = await imageResponse.arrayBuffer()
-
-        // Compress if needed
         const compressedImage = await compressImage(imageBuffer, 900)
 
         const uploadResponse = await agent.uploadBlob(compressedImage, {
@@ -350,7 +373,6 @@ async function postToBluesky(connection: any, content: string, images?: any[], t
     }
   } catch (error: any) {
     console.error('Bluesky posting error:', error)
-    console.error('Error details:', JSON.stringify(error, null, 2))
     throw new Error(error.message || 'Failed to post to Bluesky')
   }
 }
