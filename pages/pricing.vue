@@ -585,6 +585,7 @@ useHead({
 </script>
 
 <style scoped>
+
 /* Pricing Hero */
 .pricing-hero {
   text-align: center;
@@ -682,8 +683,6 @@ useHead({
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--space-lg);
-  max-width: 1400px;
-  margin-inline: auto;
 }
 
 /* Pricing Cards */
@@ -787,17 +786,16 @@ useHead({
   text-align: center;
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--color-info );
+  color: var(--color-info);
   margin-top: var(--space-sm);
 }
 
 /* Comparison Table */
 .comparison-section {
   margin-block: var(--space-2xl);
-  padding-block: var(--space-xl);
+  padding: var(--space-xl);
   background-color: var(--color-surface);
   border-radius: var(--radius-lg);
-  padding-inline: var(--space-xl);
 }
 
 .comparison-section h2 {
@@ -805,47 +803,35 @@ useHead({
   margin-bottom: var(--space-xl);
 }
 
+/* Desktop table */
 .table-wrapper {
   overflow-x: auto;
-  max-width: 1400px;
-  margin-inline: auto;
 }
 
 .comparison-table {
   width: 100%;
   border-collapse: collapse;
   text-align: center;
-  table-layout: fixed;
+  /* no table-layout: fixed — let the browser size columns by content */
 }
 
 .comparison-table th:first-child,
 .comparison-table td:first-child {
-  width: 25%;
   text-align: left;
-}
-
-.comparison-table th:nth-child(2),
-.comparison-table td:nth-child(2),
-.comparison-table th:nth-child(3),
-.comparison-table td:nth-child(3),
-.comparison-table th:nth-child(4),
-.comparison-table td:nth-child(4),
-.comparison-table th:nth-child(5),
-.comparison-table td:nth-child(5) {
-  width: 18.75%;
+  white-space: nowrap;
+  padding-right: var(--space-xl);
 }
 
 .comparison-table th,
 .comparison-table td {
-  padding: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
   border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
 }
 
 .comparison-table thead th {
   background-color: var(--color-bg);
   font-weight: 600;
-  position: sticky;
-  top: 0;
   font-size: var(--font-size-base);
 }
 
@@ -855,12 +841,16 @@ useHead({
 }
 
 .comparison-table td {
-  text-align: center;
   font-size: var(--font-size-sm);
 }
 
 .comparison-table tbody tr:hover {
   background-color: var(--color-bg);
+}
+
+/* Mobile comparison cards — hidden on desktop */
+.comparison-cards {
+  display: none;
 }
 
 /* FAQ Section */
@@ -918,20 +908,12 @@ useHead({
   margin-bottom: var(--space-xl);
 }
 
-/* Responsive */
+/* -------------------------
+   Responsive
+   ------------------------- */
 @media (max-width: 1200px) {
   .pricing-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .comparison-table th:first-child,
-  .comparison-table td:first-child {
-    width: 30%;
-  }
-
-  .comparison-table th:nth-child(n+2),
-  .comparison-table td:nth-child(n+2) {
-    width: 17.5%;
   }
 }
 
@@ -939,24 +921,66 @@ useHead({
   .pricing-grid {
     grid-template-columns: 1fr;
   }
+}
 
-  .comparison-table {
+@media (max-width: 640px) {
+
+  /* Hide desktop table, show mobile cards */
+  .table-wrapper {
+    display: none;
+  }
+
+  .comparison-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+  }
+
+  .comparison-card {
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+  }
+
+  .comparison-card-title {
+    font-size: var(--font-size-base);
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .comparison-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .comparison-card-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .comparison-card-row dt {
     font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
-  .comparison-table th,
-  .comparison-table td {
-    padding: var(--space-sm);
+  .comparison-card-row dd {
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    margin: 0;
   }
 
-  .comparison-table th:first-child,
-  .comparison-table td:first-child {
-    width: 40%;
-  }
-
-  .comparison-table th:nth-child(n+2),
-  .comparison-table td:nth-child(n+2) {
-    width: 15%;
+  .comparison-section {
+    padding-inline: var(--space-md);
   }
 }
+
 </style>
