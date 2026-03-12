@@ -692,6 +692,7 @@ useHead({
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--space-md);
+  box-sizing: border-box;
 }
 
 .action-card {
