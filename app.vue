@@ -132,6 +132,12 @@ useHead({
 </script>
 
 <style>
+.container {
+  max-width: 960px;
+  margin-inline: auto;
+  padding-inline: var(--space-xl);
+}
+
 .header-content {
   display: flex;
   align-items: center;

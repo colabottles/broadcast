@@ -553,7 +553,7 @@ useHead({
 
 <style scoped>
 .dashboard {
-  max-width: 1400px;
+  max-width: 960px;
   margin-inline: auto;
   padding: var(--space-xl);
 }
