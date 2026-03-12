@@ -272,13 +272,12 @@ useHead({
   align-items: center;
   justify-content: center;
   padding: var(--space-lg);
-  background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-surface) 100%);
+  /* background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-surface) 100%); */
 }
 
 .auth-container {
-  width: 100%;
   max-width: 420px;
-  background-color: var(--color-surface);
+  /* background-color: var(--color-surface); */
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-2xl);
