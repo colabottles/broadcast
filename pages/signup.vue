@@ -237,7 +237,8 @@ useHead({
   gap: var(--space-sm);
   padding: var(--space-md);
   border: 1px solid var(--color-border);
-  background-color: white;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
   color: var(--color-text);
   font-weight: 600;
   transition: all var(--transition-base);
@@ -351,8 +352,16 @@ useHead({
 }
 
 @media (max-width: 640px) {
+  .auth-page {
+    align-items: flex-start;
+    padding: var(--space-md);
+    padding-top: var(--space-xl);
+  }
+
   .auth-container {
-    padding: var(--space-xl);
+    max-width: 100%;
+    padding: var(--space-xl) var(--space-lg);
+    margin-bottom: var(--space-xl);
   }
 }
 </style>

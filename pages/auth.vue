@@ -483,4 +483,20 @@ useHead({
 .auth-link:hover {
   text-decoration: underline;
 }
+
+@media (max-width: 640px) {
+  .auth-page {
+    align-items: flex-start;
+    padding: var(--space-md);
+    padding-top: var(--space-xl);
+  }
+
+  .auth-container {
+    max-width: 100%;
+  }
+
+  .auth-card {
+    padding: var(--space-xl) var(--space-lg);
+  }
+}
 </style>
