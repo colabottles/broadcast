@@ -360,6 +360,7 @@ useHead({
 
   .auth-container {
     max-width: 100%;
+    width: 100%;
     padding: var(--space-xl) var(--space-lg);
     margin-bottom: var(--space-xl);
   }

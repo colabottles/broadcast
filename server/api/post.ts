@@ -178,7 +178,7 @@ export default defineEventHandler(async (event) => {
 
       switch (connection.platform) {
         case 'bluesky':
-          result = await postToBluesky(connection, body.content, body.images, body.tags)
+          result = await postToBluesky(connection, body.content, body.images, body.tags, supabase)
           break
         case 'mastodon':
           result = await postToMastodon(connection, body.content, body.images, body.tags)
@@ -247,22 +247,55 @@ export default defineEventHandler(async (event) => {
   }
 })
 
+// Add this helper above postToBluesky
+async function getRefreshedBlueskyAgent(
+  connection: any,
+  supabase: any
+): Promise<AtpAgent> {
+  const agent = new AtpAgent({ service: 'https://bsky.social' })
+
+  try {
+    // Try resuming with stored tokens
+    await agent.resumeSession({
+      did: connection.platform_user_id,
+      handle: connection.platform_username,
+      accessJwt: connection.access_token,
+      refreshJwt: connection.refresh_token,
+      active: true
+    })
+
+    // If accessJwt is expired, resumeSession will use the refreshJwt
+    // automatically and update agent.session — persist the new tokens
+    if (agent.session && agent.session.accessJwt !== connection.access_token) {
+      await supabase
+        .from('platform_connections')
+        .update({
+          access_token: agent.session.accessJwt,
+          refresh_token: agent.session.refreshJwt,
+        })
+        .eq('user_id', connection.user_id)
+        .eq('platform', 'bluesky')
+    }
+
+    return agent
+  } catch (err: any) {
+    // resumeSession failed entirely (refresh token also expired)
+    // Mark the connection as inactive so the UI prompts reconnect
+    await supabase
+      .from('platform_connections')
+      .update({ is_active: false })
+      .eq('user_id', connection.user_id)
+      .eq('platform', 'bluesky')
+
+    throw new Error('Bluesky session expired. Please reconnect your account in Platforms.')
+  }
+}
+
 // Platform-specific posting functions
-// Replace the postToBluesky function in server/api/post.ts with this version.
 // It adds mention facets (@handle resolution) alongside the existing hashtag facets.
 
-async function postToBluesky(connection: any, content: string, images?: any[], tags?: string[]): Promise<PostResult> {
-  const agent = new AtpAgent({
-    service: 'https://bsky.social'
-  })
-
-  await agent.resumeSession({
-    did: connection.platform_user_id,
-    handle: connection.platform_username,
-    accessJwt: connection.access_token,
-    refreshJwt: connection.refresh_token,
-    active: true
-  })
+async function postToBluesky(connection: any, content: string, images?: any[], tags?: string[], supabase?: any): Promise<PostResult> {
+  const agent = await getRefreshedBlueskyAgent(connection, supabase)
 
   try {
     let fullText = content

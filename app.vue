@@ -132,13 +132,31 @@ useHead({
 </script>
 
 <style>
-/* Add to your existing global styles — these replace/extend header styles */
-
 .header-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-lg);
+  flex-wrap: nowrap;
+  gap: var(--space-md);
+}
+
+.header-brand {
+  flex: 1;
+  min-width: 0;
+  /* prevents flex blowout */
+}
+
+.header-brand h1 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-brand p {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--font-size-sm);
 }
 
 /* Desktop nav: visible above 768px */
