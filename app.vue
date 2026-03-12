@@ -133,7 +133,7 @@ useHead({
 
 <style>
 .container {
-  max-width: 960px;
+  max-width: 1024px;
   margin-inline: auto;
   padding-inline: var(--space-xl);
 }
