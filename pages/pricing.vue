@@ -256,7 +256,8 @@
     <section class="comparison-section" aria-labelledby="comparison-heading">
       <h2 id="comparison-heading">Feature Comparison</h2>
 
-      <div class="table-wrapper">
+      <!-- Desktop table (hidden on mobile) -->
+      <div class="table-wrapper" aria-hidden="false">
         <table class="comparison-table">
           <caption class="sr-only">Detailed comparison of all plan features</caption>
           <thead>
@@ -327,6 +328,19 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Mobile cards (hidden on desktop) -->
+      <div class="comparison-cards">
+        <div class="comparison-card" v-for="plan in comparisonPlans" :key="plan.name">
+          <h3 class="comparison-card-title">{{ plan.name }}</h3>
+          <dl class="comparison-card-list">
+            <div class="comparison-card-row" v-for="feature in plan.features" :key="feature.label">
+              <dt>{{ feature.label }}</dt>
+              <dd>{{ feature.value }}</dd>
+            </div>
+          </dl>
+        </div>
       </div>
     </section>
 
@@ -417,6 +431,61 @@ const loading = ref(false)
 
 type Plan = 'starter' | 'creator' | 'professional' | 'enterprise'
 type Billing = 'monthly' | 'yearly'
+
+const comparisonPlans = [
+  {
+    name: 'Starter',
+    features: [
+      { label: 'Social Platforms', value: 'Up to 2' },
+      { label: 'Posts per Month', value: '25' },
+      { label: 'Post Scheduling', value: '–' },
+      { label: 'Image Uploads', value: 'Basic (up to 4)' },
+      { label: 'Draft Saving', value: '✓' },
+      { label: 'Analytics', value: '–' },
+      { label: 'Team Members', value: '1' },
+      { label: 'Support', value: 'Community' },
+    ]
+  },
+  {
+    name: 'Creator',
+    features: [
+      { label: 'Social Platforms', value: 'All 3' },
+      { label: 'Posts per Month', value: 'Unlimited' },
+      { label: 'Post Scheduling', value: '✓' },
+      { label: 'Image Uploads', value: 'Unlimited' },
+      { label: 'Draft Saving', value: '✓' },
+      { label: 'Analytics', value: 'Basic' },
+      { label: 'Team Members', value: '1' },
+      { label: 'Support', value: 'Priority Email' },
+    ]
+  },
+  {
+    name: 'Professional',
+    features: [
+      { label: 'Social Platforms', value: 'All 3' },
+      { label: 'Posts per Month', value: 'Unlimited' },
+      { label: 'Post Scheduling', value: '✓' },
+      { label: 'Image Uploads', value: 'Unlimited' },
+      { label: 'Draft Saving', value: '✓' },
+      { label: 'Analytics', value: 'Advanced' },
+      { label: 'Team Members', value: '5' },
+      { label: 'Support', value: 'Priority + Onboarding' },
+    ]
+  },
+  {
+    name: 'Enterprise',
+    features: [
+      { label: 'Social Platforms', value: 'All 3' },
+      { label: 'Posts per Month', value: 'Unlimited' },
+      { label: 'Post Scheduling', value: '✓' },
+      { label: 'Image Uploads', value: 'Unlimited' },
+      { label: 'Draft Saving', value: '✓' },
+      { label: 'Analytics', value: 'Custom' },
+      { label: 'Team Members', value: 'Unlimited' },
+      { label: 'Support', value: 'Dedicated Manager' },
+    ]
+  }
+]
 
 // Billing period state
 const billingPeriod = ref<Billing>('monthly')
@@ -723,75 +792,68 @@ useHead({
 }
 
 /* Comparison Table */
-.comparison-section {
-  margin-block: var(--space-2xl);
-  padding-block: var(--space-xl);
-  background-color: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding-inline: var(--space-xl);
+/* Mobile comparison cards */
+.comparison-cards {
+  display: none;
 }
 
-.comparison-section h2 {
-  text-align: center;
-  margin-bottom: var(--space-xl);
-}
+@media (max-width: 640px) {
+  .table-wrapper {
+    display: none;
+  }
 
-.table-wrapper {
-  overflow-x: auto;
-  max-width: 1400px;
-  margin-inline: auto;
-}
+  .comparison-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+  }
 
-.comparison-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: center;
-  table-layout: fixed;
-}
+  .comparison-card {
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+  }
 
-.comparison-table th:first-child,
-.comparison-table td:first-child {
-  width: 25%;
-  text-align: left;
-}
+  .comparison-card-title {
+    font-size: var(--font-size-base);
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-border);
+  }
 
-.comparison-table th:nth-child(2),
-.comparison-table td:nth-child(2),
-.comparison-table th:nth-child(3),
-.comparison-table td:nth-child(3),
-.comparison-table th:nth-child(4),
-.comparison-table td:nth-child(4),
-.comparison-table th:nth-child(5),
-.comparison-table td:nth-child(5) {
-  width: 18.75%;
-}
+  .comparison-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
 
-.comparison-table th,
-.comparison-table td {
-  padding: var(--space-md);
-  border-bottom: 1px solid var(--color-border);
-}
+  .comparison-card-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
 
-.comparison-table thead th {
-  background-color: var(--color-bg);
-  font-weight: 600;
-  position: sticky;
-  top: 0;
-  font-size: var(--font-size-base);
-}
+  .comparison-card-row dt {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
 
-.comparison-table tbody th {
-  font-weight: 600;
-  font-size: var(--font-size-sm);
-}
+  .comparison-card-row dd {
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    margin: 0;
+  }
 
-.comparison-table td {
-  text-align: center;
-  font-size: var(--font-size-sm);
-}
-
-.comparison-table tbody tr:hover {
-  background-color: var(--color-bg);
+  /* also tighten comparison section padding on mobile */
+  .comparison-section {
+    padding-inline: var(--space-md);
+  }
 }
 
 /* FAQ Section */
