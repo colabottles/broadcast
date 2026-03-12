@@ -692,7 +692,6 @@ useHead({
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--space-md);
-  box-sizing: border-box;
 }
 
 .action-card {
@@ -707,6 +706,7 @@ useHead({
   transition: all var(--transition-base);
   text-align: left;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .action-card:hover {
