@@ -156,7 +156,7 @@
               type="password"
               placeholder="xxxx-xxxx-xxxx-xxxx"
               required />
-            <p style="font-size: 0.875rem; color: var(--color-text-muted); margin-top: 0.5rem;">
+            <p style="font-size: 0.875rem; color: var(--color-info); margin-top: 0.5rem;">
               Generate an app password at
               <a href="https://bsky.app/settings/app-passwords" target="_blank" rel="noopener">
                 bsky.app/settings/app-passwords
