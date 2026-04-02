@@ -206,12 +206,6 @@ p {
 /* Layout               */
 /* ==================== */
 
-#app {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
 .container {
   max-width: 100vw;
   margin-inline: auto;
@@ -318,12 +312,15 @@ p {
   flex: 1;
   display: flex;
   flex-direction: column;
+  padding-block: var(--space-xl);
+  min-height: calc(100vh - 200px);
 }
 
 .main-content .container {
   flex: 1;
   display: flex;
   flex-direction: column;
+  margin-top: 2rem;
 }
 
 /* ==================== */
