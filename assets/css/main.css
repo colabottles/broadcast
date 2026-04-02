@@ -321,7 +321,7 @@ p {
   display: flex;
   flex-direction: column;
   margin-top: 2rem;
-  min-width: fit-content;
+  min-width: 320px;
   width: 640px;
 }
 
