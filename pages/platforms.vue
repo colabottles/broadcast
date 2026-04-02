@@ -419,8 +419,8 @@ useHead({
 }
 
 .platforms-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  display: flex;
+  /* grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); */
   gap: var(--space-lg);
 }
 
